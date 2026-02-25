@@ -199,7 +199,7 @@ Catatan akan masuk ke sheet sesuai bulan dari field tanggal.
 
 - Klik **Buka Rekap (Sheets)** untuk langsung membuka spreadsheet aktif
 
-## Setting Input (Super Detail)
+## Setting Input 
 
 Fitur ini untuk kustomisasi form input sesuai kebutuhan pengguna.
 
@@ -281,7 +281,7 @@ Kemungkinan:
 - Pastikan klik simpan pengaturan
 - Pastikan akun Google yang dipakai benar
 
-## Terms & Conditions (Ringkas)
+## Terms & Conditions 
 
 1. Data dan file disimpan di akun Google pengguna.
 2. Beban storage mengikuti kuota Google Drive pengguna.
