@@ -18,7 +18,9 @@ function getElements() {
     currentMonthLabel: document.getElementById('current-month-label'),
     quickMenuToggle: document.getElementById('quick-menu-toggle'),
     quickMenuPanel: document.getElementById('quick-menu-panel'),
+    orgModeLabel: document.getElementById('org-mode-label'),
     monthSelector: document.getElementById('month-selector'),
+    teacherFilterSelector: document.getElementById('teacher-filter-selector'),
     exportMonthButton: document.getElementById('export-month-button'),
     openSettingsButton: document.getElementById('open-settings-button'),
     helpButton: document.getElementById('help-button'),
@@ -43,6 +45,25 @@ function getElements() {
     resetSettingFieldButton: document.getElementById('reset-setting-field-button'),
     applySettingsButton: document.getElementById('apply-settings-button'),
     closeSettingsButton: document.getElementById('close-settings-button'),
+    organizationButton: document.getElementById('organization-button'),
+    orgMenuBadge: document.getElementById('org-menu-badge'),
+    organizationModal: document.getElementById('organization-modal'),
+    organizationCurrentInfo: document.getElementById('organization-current-info'),
+    orgOpenCreateButton: document.getElementById('org-open-create-button'),
+    orgOpenJoinButton: document.getElementById('org-open-join-button'),
+    orgOpenActiveButton: document.getElementById('org-open-active-button'),
+    orgCreateSection: document.getElementById('org-create-section'),
+    orgJoinSection: document.getElementById('org-join-section'),
+    orgActiveSection: document.getElementById('org-active-section'),
+    organizationNameInput: document.getElementById('organization-name-input'),
+    createOrganizationButton: document.getElementById('create-organization-button'),
+    organizationInviteInput: document.getElementById('organization-invite-input'),
+    joinOrganizationButton: document.getElementById('join-organization-button'),
+    inviteEmailInput: document.getElementById('invite-email-input'),
+    shareAndCopyInviteButton: document.getElementById('share-and-copy-invite-button'),
+    copyOrgInviteButton: document.getElementById('copy-org-invite-button'),
+    switchPersonalButton: document.getElementById('switch-personal-button'),
+    closeOrganizationButton: document.getElementById('close-organization-button'),
     helpModal: document.getElementById('help-modal'),
     closeHelpButton: document.getElementById('close-help-button')
   };
@@ -195,10 +216,10 @@ function createCard(item, schema, onEdit, onDelete, imageLoader) {
   const imageId = row[schema.length + 1] || '';
 
   const card = document.createElement('div');
-  card.className = 'bg-white rounded-xl shadow-sm overflow-hidden border hover:shadow-md transition flex flex-col relative group';
+  card.className = 'bg-white rounded-lg sm:rounded-xl shadow-sm overflow-hidden border hover:shadow-md transition flex flex-col relative group';
 
   const actionWrap = document.createElement('div');
-  actionWrap.className = 'absolute top-2 right-2 flex gap-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 p-1 rounded-lg backdrop-blur-sm shadow-sm';
+  actionWrap.className = 'absolute top-1.5 right-1.5 sm:top-2 sm:right-2 flex gap-1.5 sm:gap-2 z-10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity bg-white/85 p-1 rounded-lg backdrop-blur-sm shadow-sm';
 
   const editButton = document.createElement('button');
   editButton.className = 'text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-50';
@@ -216,7 +237,7 @@ function createCard(item, schema, onEdit, onDelete, imageLoader) {
   actionWrap.appendChild(deleteButton);
 
   const imageWrap = document.createElement('div');
-  imageWrap.className = 'h-24 sm:h-36 w-full bg-gray-100 relative overflow-hidden flex items-center justify-center group';
+  imageWrap.className = 'h-20 sm:h-36 w-full bg-gray-100 relative overflow-hidden flex items-center justify-center group';
 
   const img = document.createElement('img');
   img.src = 'https://via.placeholder.com/400x300?text=Memuat...';
@@ -234,15 +255,16 @@ function createCard(item, schema, onEdit, onDelete, imageLoader) {
   const titleIndex = schema.findIndex((f) => f.type === 'date') >= 0 ? 0 : 0;
   const titleValue = row[titleIndex] || 'Tanpa Judul';
   const title = document.createElement('h3');
-  title.className = 'font-bold text-gray-900 text-sm sm:text-base leading-tight';
+  title.className = 'font-semibold text-gray-900 text-xs sm:text-base leading-tight max-h-9 overflow-hidden';
   title.textContent = titleValue;
 
   const list = document.createElement('div');
-  list.className = 'space-y-1 text-[11px] sm:text-sm text-gray-700';
+  list.className = 'space-y-0.5 sm:space-y-1 text-[10px] sm:text-sm text-gray-700';
   schema.forEach((field, idx) => {
     const value = row[idx];
     if (!value) return;
     const line = document.createElement('p');
+    line.className = 'truncate';
     line.innerHTML = `<span class="font-semibold text-gray-800">${field.label}:</span> ${value}`;
     list.appendChild(line);
   });
@@ -402,6 +424,14 @@ function closeSettingsModal(els) {
   els.settingsModal.classList.add('hidden');
 }
 
+function openOrganizationModal(els) {
+  els.organizationModal.classList.remove('hidden');
+}
+
+function closeOrganizationModal(els) {
+  els.organizationModal.classList.add('hidden');
+}
+
 function openHelpModal(els) {
   els.helpModal.classList.remove('hidden');
 }
@@ -437,6 +467,8 @@ export {
   previewImage,
   openSettingsModal,
   closeSettingsModal,
+  openOrganizationModal,
+  closeOrganizationModal,
   openHelpModal,
   closeHelpModal,
   setThemeToggleState

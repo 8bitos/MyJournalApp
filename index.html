@@ -80,18 +80,25 @@
 
     <div id="app-screen" class="hidden min-h-screen flex flex-col">
         <nav class="bg-white shadow-sm sticky top-0 z-10">
-            <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-16 items-center">
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 min-w-0">
                         <span class="material-icons text-blue-600">book</span>
-                        <span class="font-bold text-xl text-gray-800">MyJournal</span>
+                        <span class="font-bold text-lg sm:text-xl text-gray-800">MyJournal</span>
                     </div>
-                    <div class="flex items-center gap-2 sm:gap-4 relative">
-                        <span id="user-name" class="text-xs sm:text-sm font-medium text-gray-600 max-w-[120px] sm:max-w-[220px] truncate">User</span>
+                    <div class="flex items-center gap-2 sm:gap-3 relative">
+                        <span id="user-name" class="text-xs sm:text-sm font-medium text-gray-600 max-w-[84px] sm:max-w-[220px] truncate">User</span>
                         <button id="quick-menu-toggle" class="inline-flex items-center justify-center h-9 w-9 rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" title="Menu">
                             <span class="material-icons text-xl">menu</span>
                         </button>
                         <div id="quick-menu-panel" class="hidden absolute right-0 top-12 w-56 bg-white border border-gray-200 rounded-lg shadow-lg p-2 z-20">
+                            <button id="organization-button" class="w-full inline-flex items-center justify-between px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50">
+                                <span class="inline-flex items-center">
+                                    <span class="material-icons text-gray-700 mr-2 text-lg">groups</span>
+                                    Organisasi
+                                </span>
+                                <span id="org-menu-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">Personal</span>
+                            </button>
                             <button id="open-settings-button" class="w-full inline-flex items-center px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50">
                                 <span class="material-icons text-gray-700 mr-2 text-lg">settings</span>
                                 Setting Input
@@ -106,32 +113,39 @@
                             </button>
                         </div>
                         <img id="user-avatar" class="h-8 w-8 rounded-full bg-gray-200" src="" alt="">
-                        <button id="signout_button" class="text-sm text-red-500 hover:text-red-700 font-medium">Keluar</button>
+                        <button id="signout_button" class="inline-flex items-center justify-center sm:justify-start h-9 w-9 sm:h-auto sm:w-auto rounded-md text-red-500 hover:text-red-700 font-medium" title="Keluar">
+                            <span class="material-icons text-lg sm:mr-1">logout</span>
+                            <span class="hidden sm:inline text-sm">Keluar</span>
+                        </button>
                     </div>
                 </div>
             </div>
         </nav>
 
-        <main class="flex-grow max-w-5xl mx-auto w-full px-4 py-8 sm:px-6 lg:px-8">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <main class="flex-grow max-w-5xl mx-auto w-full px-3 sm:px-6 lg:px-8 py-5 sm:py-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 sm:mb-8 gap-3 sm:gap-4">
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-900">Jurnal Bulan Ini</h2>
-                    <p class="text-sm text-gray-500 mt-1" id="current-date">...</p>
-                    <p class="text-sm text-blue-600 mt-1" id="current-month-label">Bulan aktif: -</p>
+                    <h2 class="text-xl sm:text-2xl font-bold text-gray-900">Jurnal Bulan Ini</h2>
+                    <p class="text-xs sm:text-sm text-gray-500 mt-1" id="current-date">...</p>
+                    <p class="text-xs sm:text-sm text-blue-600 mt-1" id="current-month-label">Bulan aktif: -</p>
+                    <p class="text-xs text-indigo-600 mt-1" id="org-mode-label">Mode: Personal</p>
                 </div>
-                <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 w-full sm:w-auto">
-                    <select id="month-selector" class="col-span-2 w-full sm:w-auto inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"></select>
-                    <button id="export-month-button" class="col-span-1 w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        <span class="material-icons text-gray-700 mr-2 text-lg">download</span>
-                        Export Bulan
+                <div class="grid grid-cols-3 sm:flex sm:flex-wrap gap-2 w-full sm:w-auto">
+                    <select id="month-selector" class="col-span-3 w-full sm:w-auto inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"></select>
+                    <select id="teacher-filter-selector" class="hidden col-span-3 w-full sm:w-auto inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <option value="ALL">Semua Guru</option>
+                    </select>
+                    <button id="export-month-button" class="col-span-1 h-10 w-full sm:w-auto inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" title="Export Bulan">
+                        <span class="material-icons text-gray-700 sm:mr-2 text-lg">download</span>
+                        <span class="hidden sm:inline">Export Bulan</span>
                     </button>
-                    <a id="sheet-link" href="#" target="_blank" class="col-span-1 w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        <span class="material-icons text-green-600 mr-2 text-lg">table_view</span>
-                        Buka Rekap (Sheets)
+                    <a id="sheet-link" href="#" target="_blank" class="col-span-1 h-10 w-full sm:w-auto inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" title="Buka Rekap (Sheets)">
+                        <span class="material-icons text-green-600 sm:mr-2 text-lg">table_view</span>
+                        <span class="hidden sm:inline">Buka Rekap (Sheets)</span>
                     </a>
-                    <button onclick="openModal()" class="col-span-2 w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        <span class="material-icons mr-2 text-lg">add</span>
-                        Tambah Catatan
+                    <button onclick="openModal()" class="col-span-1 h-10 w-full sm:w-auto inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" title="Tambah Catatan">
+                        <span class="material-icons sm:mr-2 text-lg">add</span>
+                        <span class="hidden sm:inline">Tambah Catatan</span>
                     </button>
                 </div>
             </div>
@@ -143,21 +157,21 @@
 
             <div id="journal-grid" class="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"></div>
 
-            <div id="pagination-wrap" class="hidden mt-6 flex flex-wrap items-center justify-center gap-3">
-                <label for="page-size-selector" class="text-sm text-gray-600">Tampil</label>
-                <select id="page-size-selector" class="px-2 py-1.5 rounded-md border border-gray-300 text-sm text-gray-700 bg-white">
+            <div id="pagination-wrap" class="hidden mt-6 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+                <label for="page-size-selector" class="text-xs sm:text-sm text-gray-600">Tampil</label>
+                <select id="page-size-selector" class="px-2 py-1.5 rounded-md border border-gray-300 text-xs sm:text-sm text-gray-700 bg-white">
                     <option value="4">4</option>
                     <option value="6">6</option>
                     <option value="8">8</option>
                     <option value="9">9</option>
                     <option value="12">12</option>
                 </select>
-                <button id="prev-page-button" class="px-3 py-2 rounded-md border border-gray-300 text-sm text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">Sebelumnya</button>
-                <span id="page-info" class="text-sm text-gray-600">Halaman 1/1</span>
-                <button id="next-page-button" class="px-3 py-2 rounded-md border border-gray-300 text-sm text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">Berikutnya</button>
+                <button id="prev-page-button" class="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-md border border-gray-300 text-xs sm:text-sm text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">Sebelumnya</button>
+                <span id="page-info" class="text-xs sm:text-sm text-gray-600">Halaman 1/1</span>
+                <button id="next-page-button" class="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-md border border-gray-300 text-xs sm:text-sm text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">Berikutnya</button>
             </div>
 
-            <div id="empty-state" class="hidden text-center py-20 bg-white rounded-xl border border-dashed border-gray-300">
+            <div id="empty-state" class="hidden text-center py-14 sm:py-20 bg-white rounded-xl border border-dashed border-gray-300">
                 <span class="material-icons text-gray-300 text-6xl mb-4">filter_hdr</span>
                 <h3 class="text-lg font-medium text-gray-900">Belum ada catatan bulan ini</h3>
                 <p class="text-gray-500 mt-1">Mulai dengan menambahkan gambar dan cerita hari ini.</p>
@@ -265,6 +279,7 @@
                             <p class="font-semibold text-gray-900">3. History bulanan</p>
                             <p>Gunakan dropdown bulan di toolbar untuk berpindah riwayat. Setiap bulan dipisah dalam tab sheet format <code>YYYY-MM</code> agar rekap lebih rapi dan cepat ditelusuri.</p>
                             <p>Perpindahan bulan hanya memfilter tampilan dan sumber data aktif, bukan memindahkan data otomatis kecuali saat edit tanggal catatan.</p>
+                            <p>Untuk mode grup/sekolah, gunakan filter <b>Guru</b> untuk melihat catatan per guru atau seluruh guru pada bulan tersebut.</p>
                         </div>
                         <div>
                             <p class="font-semibold text-gray-900">4. Edit dan hapus</p>
@@ -308,6 +323,26 @@
                             <p class="font-semibold text-gray-900">8. Dark Mode</p>
                             <p>Klik tombol <b>Dark Mode</b> di toolbar untuk ganti tema terang/gelap. Preferensi disimpan otomatis di browser.</p>
                         </div>
+                        <div>
+                            <p class="font-semibold text-gray-900">9. Mode Organisasi (opsional)</p>
+                            <p>Tombol <b>Organisasi</b> berada di samping nama user. Secara default aplikasi tetap di mode personal.</p>
+                            <p>Mode ini dipakai jika beberapa guru/anggota ingin menulis pada spreadsheet dan folder gambar yang sama.</p>
+                            <p>Konsep dasar:</p>
+                            <p>- <b>Personal</b>: pakai spreadsheet + folder milik akun sendiri.</p>
+                            <p>- <b>Organisasi</b>: pakai spreadsheet + folder milik organisasi (owner).</p>
+                            <p>Di modal Organisasi tersedia 3 tab aksi:</p>
+                            <p>1. <b>Buat Organisasi</b>: membuat resource organisasi baru (spreadsheet + folder images).</p>
+                            <p>2. <b>Join Organisasi</b>: gabung memakai invite link atau token dari owner.</p>
+                            <p>3. <b>Kelola Organisasi</b>: owner dapat share akses editor dan membuat invite.</p>
+                            <p>Tombol pada Kelola Organisasi:</p>
+                            <p>- <b>Share + Copy Invite</b>: memberi akses editor ke email anggota lalu menyalin link join.</p>
+                            <p>- <b>Copy Invite Link</b>: menyalin link invite tanpa proses share email.</p>
+                            <p>- <b>Kembali ke Personal</b>: keluar dari mode organisasi dan kembali ke resource pribadi.</p>
+                            <p>Catatan penting:</p>
+                            <p>- Anggota wajib sudah diberi akses oleh owner agar bisa menulis data.</p>
+                            <p>- Jika hanya dapat link tanpa akses folder/sheet, biasanya user hanya bisa lihat atau akan gagal simpan.</p>
+                            <p>- Di mode organisasi, sistem menambahkan field <b>Nama Guru</b> agar rekap per guru lebih jelas.</p>
+                        </div>
                         <div class="pt-2 border-t border-gray-200">
                             <p class="font-semibold text-gray-900">Syarat & Ketentuan</p>
                             <p>1. Data dan file disimpan pada akun Google pengguna yang login. Aplikasi tidak menyediakan penyimpanan server terpisah.</p>
@@ -320,11 +355,67 @@
                             <p>- Gambar tersimpan di folder Drive: <code>My Monthly Journal - Images</code>.</p>
                             <p>- Data tabel tersimpan di spreadsheet: <code>My Monthly Journal - Data</code> dengan tab bulanan <code>YYYY-MM</code>.</p>
                             <p>- Konfigurasi setting input akun tersimpan di tab: <code>_CONFIG</code>.</p>
+                            <p>8. Untuk penggunaan banyak guru BK dalam satu sekolah, gunakan fitur <b>Organisasi</b> (buat/join via invitation) agar semua anggota bekerja di spreadsheet dan folder organisasi yang sama.</p>
+                            <p>9. Owner organisasi dapat memakai tombol <b>Share + Copy Invite</b> untuk memberi akses editor ke email anggota sekaligus mengirim link join.</p>
+                            <p>10. Perubahan setting input tetap bersifat per akun Google, termasuk ketika user sedang berada di mode organisasi.</p>
                         </div>
                     </div>
                 </div>
                 <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                     <button id="close-help-button" type="button" class="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:w-auto sm:text-sm">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="organization-modal" class="fixed z-50 inset-0 overflow-y-auto hidden" aria-labelledby="organization-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <h3 id="organization-title" class="text-lg font-semibold text-gray-900">Mode Organisasi</h3>
+                    <p id="organization-current-info" class="text-sm text-gray-600 mt-1">Anda sedang memakai mode personal.</p>
+
+                    <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <button id="org-open-create-button" type="button" class="px-3 py-2 rounded-md border text-sm text-gray-700 hover:bg-gray-50">Buat Organisasi</button>
+                        <button id="org-open-join-button" type="button" class="px-3 py-2 rounded-md border text-sm text-gray-700 hover:bg-gray-50">Join Organisasi</button>
+                        <button id="org-open-active-button" type="button" class="px-3 py-2 rounded-md border text-sm text-gray-700 hover:bg-gray-50">Kelola Organisasi</button>
+                    </div>
+
+                    <div id="org-create-section" class="hidden mt-4 p-3 border rounded-lg">
+                        <p class="text-sm font-semibold text-gray-800">Buat Organisasi</p>
+                        <p class="text-xs text-gray-500 mt-1">Akun pembuat akan menjadi owner spreadsheet dan folder organisasi.</p>
+                        <div class="mt-2 flex flex-col sm:flex-row gap-2">
+                            <input id="organization-name-input" type="text" placeholder="Nama organisasi (contoh: BK SMPN 6)" class="flex-1 border rounded-md px-3 py-2 text-sm" />
+                            <button id="create-organization-button" type="button" class="px-4 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700">Buat</button>
+                        </div>
+                    </div>
+
+                    <div id="org-join-section" class="hidden mt-3 p-3 border rounded-lg">
+                        <p class="text-sm font-semibold text-gray-800">Join Organisasi</p>
+                        <p class="text-xs text-gray-500 mt-1">Paste link invite atau token invite dari owner organisasi.</p>
+                        <div class="mt-2 flex flex-col gap-2">
+                            <textarea id="organization-invite-input" rows="2" placeholder="Paste link invite atau token..." class="w-full border rounded-md px-3 py-2 text-sm"></textarea>
+                            <button id="join-organization-button" type="button" class="self-start px-4 py-2 rounded-md border text-sm text-gray-700 hover:bg-gray-50">Join</button>
+                        </div>
+                    </div>
+
+                    <div id="org-active-section" class="hidden mt-3 p-3 border rounded-lg">
+                        <p class="text-sm font-semibold text-gray-800">Aksi Organisasi Aktif</p>
+                        <p class="text-xs text-gray-500 mt-1">Owner perlu share spreadsheet dan folder gambar ke anggota (Editor) agar bisa menulis data.</p>
+                        <div class="mt-2 flex flex-col sm:flex-row gap-2">
+                            <input id="invite-email-input" type="email" placeholder="Email anggota (opsional untuk invite terbatas)" class="flex-1 border rounded-md px-3 py-2 text-sm" />
+                            <button id="share-and-copy-invite-button" type="button" class="px-3 py-2 rounded-md border text-sm text-gray-700 hover:bg-gray-50">Share + Copy Invite</button>
+                        </div>
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            <button id="copy-org-invite-button" type="button" class="px-3 py-2 rounded-md border text-sm text-gray-700 hover:bg-gray-50">Copy Invite Link</button>
+                            <button id="switch-personal-button" type="button" class="px-3 py-2 rounded-md border text-sm text-red-600 hover:bg-red-50">Kembali ke Personal</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button id="close-organization-button" type="button" class="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:w-auto sm:text-sm">Tutup</button>
                 </div>
             </div>
         </div>

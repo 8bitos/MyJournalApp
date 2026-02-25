@@ -19,6 +19,8 @@ import {
   previewImage,
   openSettingsModal,
   closeSettingsModal,
+  openOrganizationModal,
+  closeOrganizationModal,
   openHelpModal,
   closeHelpModal,
   setThemeToggleState
@@ -50,6 +52,7 @@ const IMAGE_ID_LABEL = 'ID Gambar';
 const THEME_STORAGE_KEY = 'journal_theme_mode';
 const CONFIG_SHEET_NAME = '_CONFIG';
 const PAGE_SIZE_STORAGE_KEY = 'journal_page_size';
+const ORG_CONTEXT_STORAGE_KEY = 'journal_org_context';
 const MONTH_SHEET_PATTERN = /^\d{4}-\d{2}$/;
 const MONTH_NAMES = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
@@ -62,7 +65,9 @@ function createApp() {
     driveFolderId: null,
     spreadsheetId: null,
     configSheetId: null,
+    userDisplayName: '',
     userEmail: '',
+    orgContext: null,
     schema: [...DEFAULT_SCHEMA],
     isEditing: false,
     editingRowIndex: null,
@@ -73,11 +78,149 @@ function createApp() {
     activeSheetGid: null,
     monthSheets: new Map(),
     quickMenuBound: false,
+    userNameResizeBound: false,
     paginationBound: false,
     allEntries: [],
     currentPage: 1,
     pageSize: 6
   };
+
+  function ensureOrgSchema(schemaInput) {
+    const schema = normalizeSchema(schemaInput);
+    const hasDate = schema.some((field) => field.type === 'date');
+    if (!hasDate) {
+      schema.unshift({ id: 'f0', label: 'Tanggal', type: 'date', required: true, options: [] });
+    }
+
+    const guruIndex = schema.findIndex((field) => field.label.trim().toLowerCase() === 'nama guru');
+    if (guruIndex === -1) {
+      const insertAt = Math.min(1, schema.length);
+      schema.splice(insertAt, 0, { id: 'f0', label: 'Nama Guru', type: 'text', required: true, options: [] });
+    } else {
+      schema[guruIndex].required = true;
+      if (schema[guruIndex].type !== 'text') schema[guruIndex].type = 'text';
+    }
+
+    return schema.map((field, idx) => ({
+      id: `f${idx + 1}`,
+      label: field.label,
+      type: field.type,
+      required: field.required,
+      options: Array.isArray(field.options) ? field.options : []
+    }));
+  }
+
+  function isOrgMode() {
+    return Boolean(state.orgContext?.spreadsheetId && state.orgContext?.folderId);
+  }
+
+  function loadOrgContext() {
+    const raw = localStorage.getItem(ORG_CONTEXT_STORAGE_KEY);
+    if (!raw) {
+      state.orgContext = null;
+      return;
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.mode === 'org' && parsed.spreadsheetId && parsed.folderId) {
+        state.orgContext = parsed;
+      } else {
+        state.orgContext = null;
+      }
+    } catch (err) {
+      state.orgContext = null;
+    }
+  }
+
+  function saveOrgContext(context) {
+    if (!context) {
+      localStorage.removeItem(ORG_CONTEXT_STORAGE_KEY);
+      state.orgContext = null;
+      return;
+    }
+    const clean = {
+      mode: 'org',
+      name: String(context.name || 'Organisasi'),
+      spreadsheetId: String(context.spreadsheetId || ''),
+      folderId: String(context.folderId || ''),
+      ownerEmail: String(context.ownerEmail || '')
+    };
+    localStorage.setItem(ORG_CONTEXT_STORAGE_KEY, JSON.stringify(clean));
+    state.orgContext = clean;
+  }
+
+  function encodeInvitePayload(payload) {
+    const json = JSON.stringify(payload);
+    return btoa(unescape(encodeURIComponent(json)));
+  }
+
+  function decodeInvitePayload(token) {
+    const json = decodeURIComponent(escape(atob(token)));
+    return JSON.parse(json);
+  }
+
+  function parseInviteInput(raw) {
+    const trimmed = (raw || '').trim();
+    if (!trimmed) return null;
+    try {
+      if (trimmed.includes('invite=')) {
+        const url = new URL(trimmed);
+        const token = url.searchParams.get('invite');
+        if (!token) return null;
+        return decodeInvitePayload(token);
+      }
+      return decodeInvitePayload(trimmed);
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function getOrgInviteLink() {
+    return getOrgInviteLinkForEmail('');
+  }
+
+  function getOrgInviteLinkForEmail(targetEmail = '') {
+    if (!isOrgMode()) return '';
+    const payload = {
+      name: state.orgContext.name,
+      spreadsheetId: state.orgContext.spreadsheetId,
+      folderId: state.orgContext.folderId,
+      ownerEmail: state.orgContext.ownerEmail,
+      targetEmail: String(targetEmail || '').trim().toLowerCase(),
+      createdAt: new Date().toISOString()
+    };
+    const token = encodeInvitePayload(payload);
+    const base = `${window.location.origin}${window.location.pathname}`;
+    return `${base}?invite=${encodeURIComponent(token)}`;
+  }
+
+  function updateModeUi() {
+    const orgActive = isOrgMode();
+    if (els.orgModeLabel) {
+      els.orgModeLabel.textContent = orgActive
+        ? `Mode: Organisasi (${state.orgContext.name})`
+        : 'Mode: Personal';
+    }
+    if (els.organizationCurrentInfo) {
+      els.organizationCurrentInfo.textContent = orgActive
+        ? `Anda sedang di organisasi: ${state.orgContext.name}`
+        : 'Anda sedang memakai mode personal.';
+    }
+    if (els.orgMenuBadge) {
+      els.orgMenuBadge.textContent = orgActive ? 'Aktif' : 'Personal';
+      els.orgMenuBadge.className = orgActive
+        ? 'text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700'
+        : 'text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600';
+    }
+    if (els.teacherFilterSelector) {
+      const guruExists = getTeacherFieldIndex() >= 0;
+      const shouldShow = orgActive && guruExists;
+      els.teacherFilterSelector.classList.toggle('hidden', !shouldShow);
+      if (!shouldShow) {
+        els.teacherFilterSelector.value = 'ALL';
+      }
+    }
+  }
 
   const imageLoader = createImageLoader(() => {
     const token = gapi.client.getToken();
@@ -104,6 +247,30 @@ function createApp() {
   function closeQuickMenu() {
     if (!els.quickMenuPanel) return;
     els.quickMenuPanel.classList.add('hidden');
+  }
+
+  function isMobileViewport() {
+    return window.matchMedia('(max-width: 639px)').matches;
+  }
+
+  function formatUserNameForViewport(name) {
+    const safeName = String(name || 'Pengguna');
+    if (!isMobileViewport()) return safeName;
+    if (safeName.length <= 7) return safeName;
+    return `${safeName.slice(0, 5)}...`;
+  }
+
+  function renderUserName() {
+    if (!els.userName) return;
+    const fullName = state.userDisplayName || state.userEmail || 'Pengguna';
+    els.userName.innerText = formatUserNameForViewport(fullName);
+    els.userName.title = fullName;
+  }
+
+  function setupUserNameResizeHandler() {
+    if (state.userNameResizeBound) return;
+    window.addEventListener('resize', renderUserName);
+    state.userNameResizeBound = true;
   }
 
   function toggleQuickMenu() {
@@ -133,7 +300,7 @@ function createApp() {
   }
 
   function getTotalPages() {
-    return Math.max(1, Math.ceil(state.allEntries.length / state.pageSize));
+    return Math.max(1, Math.ceil(getFilteredEntries().length / state.pageSize));
   }
 
   function updatePaginationUi() {
@@ -152,12 +319,13 @@ function createApp() {
   }
 
   function renderCurrentPage() {
+    const entries = getFilteredEntries();
     const totalPages = getTotalPages();
     if (state.currentPage > totalPages) state.currentPage = totalPages;
     if (state.currentPage < 1) state.currentPage = 1;
 
     const start = (state.currentPage - 1) * state.pageSize;
-    const pageRows = state.allEntries.slice(start, start + state.pageSize);
+    const pageRows = entries.slice(start, start + state.pageSize);
     renderEntries(els, pageRows, state.schema, openEditModal, deleteEntry, imageLoader);
     updatePaginationUi();
   }
@@ -186,6 +354,42 @@ function createApp() {
       renderCurrentPage();
     };
     state.paginationBound = true;
+  }
+
+  function getTeacherFieldIndex() {
+    return state.schema.findIndex((field) => field.label.trim().toLowerCase() === 'nama guru');
+  }
+
+  function getFilteredEntries() {
+    const selected = els.teacherFilterSelector?.value || 'ALL';
+    if (selected === 'ALL') return state.allEntries;
+    const guruIndex = getTeacherFieldIndex();
+    if (guruIndex < 0) return state.allEntries;
+    return state.allEntries.filter((item) => (item.data[guruIndex] || '').trim() === selected);
+  }
+
+  function refreshTeacherFilterOptions() {
+    if (!els.teacherFilterSelector) return;
+    const guruIndex = getTeacherFieldIndex();
+    const previous = els.teacherFilterSelector.value || 'ALL';
+    const names = new Set();
+    if (guruIndex >= 0) {
+      state.allEntries.forEach((item) => {
+        const value = (item.data[guruIndex] || '').trim();
+        if (value) names.add(value);
+      });
+    }
+
+    const sorted = Array.from(names).sort((a, b) => a.localeCompare(b, 'id'));
+    els.teacherFilterSelector.innerHTML = '<option value="ALL">Semua Guru</option>';
+    sorted.forEach((name) => {
+      const option = document.createElement('option');
+      option.value = name;
+      option.textContent = name;
+      els.teacherFilterSelector.appendChild(option);
+    });
+
+    els.teacherFilterSelector.value = sorted.includes(previous) || previous === 'ALL' ? previous : 'ALL';
   }
 
   function cloneDefaultSchema() {
@@ -289,17 +493,21 @@ function createApp() {
 
     const profile = await getGoogleProfile();
     state.userEmail = profile.email || '';
-    els.userName.innerText = profile.name || profile.email || 'Pengguna';
-    if (els.userName) {
-      els.userName.title = profile.email || profile.name || 'Pengguna';
-    }
+    state.userDisplayName = profile.name || profile.email || 'Pengguna';
+    renderUserName();
+    setupUserNameResizeHandler();
     els.signoutButton.onclick = handleSignoutClick;
     els.currentDate.innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
     els.monthSelector.onchange = handleMonthChange;
+    els.teacherFilterSelector.onchange = () => {
+      state.currentPage = 1;
+      renderCurrentPage();
+    };
     setupQuickMenuEvents();
     setupPaginationEvents();
     els.exportMonthButton.onclick = exportCurrentMonthCsv;
+    els.organizationButton.onclick = openOrganizationPanel;
     els.openSettingsButton.onclick = openSettings;
     els.helpButton.onclick = () => openHelpModal(els);
     els.closeHelpButton.onclick = () => closeHelpModal(els);
@@ -308,10 +516,26 @@ function createApp() {
     els.resetSettingFieldButton.onclick = resetSettingsToDefault;
     els.applySettingsButton.onclick = applySettings;
     els.closeSettingsButton.onclick = () => closeSettingsModal(els);
+    els.createOrganizationButton.onclick = createOrganization;
+    els.joinOrganizationButton.onclick = joinOrganizationFromInput;
+    els.shareAndCopyInviteButton.onclick = shareAndCopyInvite;
+    els.copyOrgInviteButton.onclick = copyOrganizationInvite;
+    els.switchPersonalButton.onclick = switchToPersonalMode;
+    els.closeOrganizationButton.onclick = () => closeOrganizationModal(els);
+    els.orgOpenCreateButton.onclick = () => toggleOrganizationSection('create');
+    els.orgOpenJoinButton.onclick = () => toggleOrganizationSection('join');
+    els.orgOpenActiveButton.onclick = () => {
+      if (!isOrgMode()) {
+        setGlobalError(els, 'Aktifkan atau join organisasi dulu untuk membuka panel kelola.');
+        return;
+      }
+      toggleOrganizationSection('active');
+    };
 
     try {
+      await applyInviteFromUrlIfExists();
       await setupBackend();
-      renderDynamicForm(els, state.schema);
+      renderDynamicForm(els, state.schema, getDefaultFormValues());
       await loadJournalEntries();
     } catch (err) {
       setGlobalError(els, 'Gagal memuat data. Periksa koneksi dan izin Google.');
@@ -319,6 +543,23 @@ function createApp() {
     } finally {
       setBlockingLoading(els, false);
     }
+  }
+
+  async function applyInviteFromUrlIfExists() {
+    const params = new URLSearchParams(window.location.search);
+    const inviteToken = params.get('invite');
+    if (!inviteToken) return;
+    const payload = parseInviteInput(inviteToken);
+    if (!payload?.spreadsheetId || !payload?.folderId) return;
+    const proceed = confirm(`Join organisasi "${payload.name || 'Organisasi'}" dari invite link?`);
+    if (!proceed) return;
+    saveOrgContext({
+      name: payload.name || 'Organisasi',
+      spreadsheetId: payload.spreadsheetId,
+      folderId: payload.folderId,
+      ownerEmail: payload.ownerEmail || ''
+    });
+    window.history.replaceState({}, document.title, window.location.pathname);
   }
 
   function getHeadersFromSchema(schema = state.schema) {
@@ -390,7 +631,8 @@ function createApp() {
       return;
     }
     try {
-      state.schema = normalizeSchema(JSON.parse(matched[1]));
+      const parsed = normalizeSchema(JSON.parse(matched[1]));
+      state.schema = isOrgMode() ? ensureOrgSchema(parsed) : parsed;
     } catch (err) {
       state.schema = cloneDefaultSchema();
     }
@@ -509,29 +751,39 @@ function createApp() {
   }
 
   async function setupBackend() {
-    const folderQuery = `name = '${CONFIG.IMAGE_FOLDER_NAME}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
-    let response = await gapi.client.drive.files.list({ q: folderQuery, fields: 'files(id, name)' });
-    let files = response.result.files;
+    loadOrgContext();
+    let response;
+    let files;
 
-    if (files && files.length > 0) {
-      state.driveFolderId = files[0].id;
+    if (isOrgMode()) {
+      state.driveFolderId = state.orgContext.folderId;
+      state.spreadsheetId = state.orgContext.spreadsheetId;
+      await gapi.client.sheets.spreadsheets.get({ spreadsheetId: state.spreadsheetId });
     } else {
-      response = await gapi.client.drive.files.create({
-        resource: { name: CONFIG.IMAGE_FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' },
-        fields: 'id'
-      });
-      state.driveFolderId = response.result.id;
-    }
+      const folderQuery = `name = '${CONFIG.IMAGE_FOLDER_NAME}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+      response = await gapi.client.drive.files.list({ q: folderQuery, fields: 'files(id, name)' });
+      files = response.result.files;
 
-    const sheetQuery = `name = '${CONFIG.SPREADSHEET_NAME}' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false`;
-    response = await gapi.client.drive.files.list({ q: sheetQuery, fields: 'files(id, name)' });
-    files = response.result.files;
+      if (files && files.length > 0) {
+        state.driveFolderId = files[0].id;
+      } else {
+        response = await gapi.client.drive.files.create({
+          resource: { name: CONFIG.IMAGE_FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' },
+          fields: 'id'
+        });
+        state.driveFolderId = response.result.id;
+      }
 
-    if (files && files.length > 0) {
-      state.spreadsheetId = files[0].id;
-    } else {
-      response = await gapi.client.sheets.spreadsheets.create({ resource: { properties: { title: CONFIG.SPREADSHEET_NAME } } });
-      state.spreadsheetId = response.result.spreadsheetId;
+      const sheetQuery = `name = '${CONFIG.SPREADSHEET_NAME}' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false`;
+      response = await gapi.client.drive.files.list({ q: sheetQuery, fields: 'files(id, name)' });
+      files = response.result.files;
+
+      if (files && files.length > 0) {
+        state.spreadsheetId = files[0].id;
+      } else {
+        response = await gapi.client.sheets.spreadsheets.create({ resource: { properties: { title: CONFIG.SPREADSHEET_NAME } } });
+        state.spreadsheetId = response.result.spreadsheetId;
+      }
     }
 
     const defaultMonth = formatMonthKey(new Date());
@@ -540,6 +792,8 @@ function createApp() {
     if (state.monthSheets.size === 0) await ensureMonthSheet(defaultMonth);
 
     await loadSchemaByAccount();
+    state.schema = isOrgMode() ? ensureOrgSchema(state.schema) : normalizeSchema(state.schema);
+    updateModeUi();
 
     const latestMonth = Array.from(state.monthSheets.keys()).sort((a, b) => b.localeCompare(a))[0] || defaultMonth;
     await setActiveMonth(latestMonth, false);
@@ -562,6 +816,7 @@ function createApp() {
       const rows = response.result.values || [];
       setDataLoading(els, false);
       state.allEntries = rows.map((row, index) => ({ data: row, rowIndex: index + 2 })).reverse();
+      refreshTeacherFilterOptions();
       state.currentPage = 1;
       renderCurrentPage();
     } catch (err) {
@@ -584,6 +839,15 @@ function createApp() {
     state.schema.forEach((field, idx) => {
       values[field.id] = row[idx] || '';
     });
+    return values;
+  }
+
+  function getDefaultFormValues() {
+    const values = {};
+    const guruField = state.schema.find((field) => field.label.trim().toLowerCase() === 'nama guru');
+    if (guruField) {
+      values[guruField.id] = state.userEmail || state.userDisplayName || '';
+    }
     return values;
   }
 
@@ -741,7 +1005,7 @@ function createApp() {
       closeModal(els);
       setModalEditing(els, false);
       resetEditState();
-      renderDynamicForm(els, state.schema);
+      renderDynamicForm(els, state.schema, getDefaultFormValues());
       await setActiveMonth(targetMonthKey, true);
     } catch (err) {
       setGlobalError(els, 'Gagal menyimpan catatan.');
@@ -762,12 +1026,23 @@ function createApp() {
       });
 
       const rows = response.result.values || [];
-      if (rows.length === 0) {
+      const selectedGuru = els.teacherFilterSelector?.value || 'ALL';
+      const filtered = getFilteredEntries().map((item) => item.data);
+      const exportRows = selectedGuru === 'ALL'
+        ? rows
+        : [rows[0] || getHeadersFromSchema(), ...filtered];
+
+      if (selectedGuru !== 'ALL' && filtered.length === 0) {
+        setGlobalError(els, 'Tidak ada data guru terpilih untuk diekspor pada bulan ini.');
+        return;
+      }
+
+      if (exportRows.length === 0) {
         setGlobalError(els, 'Tidak ada data untuk diekspor pada bulan ini.');
         return;
       }
 
-      const csv = rows
+      const csv = exportRows
         .map((row) => row.map((cell) => `"${String(cell || '').replaceAll('"', '""')}"`).join(','))
         .join('\n');
 
@@ -797,6 +1072,156 @@ function createApp() {
     };
   }
 
+  function openOrganizationPanel() {
+    updateModeUi();
+    if (els.organizationInviteInput) els.organizationInviteInput.value = '';
+    if (els.inviteEmailInput) els.inviteEmailInput.value = '';
+    if (els.organizationNameInput) els.organizationNameInput.value = '';
+    toggleOrganizationSection('');
+    openOrganizationModal(els);
+  }
+
+  function toggleOrganizationSection(section) {
+    if (els.orgCreateSection) {
+      els.orgCreateSection.classList.toggle('hidden', section !== 'create');
+    }
+    if (els.orgJoinSection) {
+      els.orgJoinSection.classList.toggle('hidden', section !== 'join');
+    }
+    if (els.orgActiveSection) {
+      const canShowActive = isOrgMode() && section === 'active';
+      els.orgActiveSection.classList.toggle('hidden', !canShowActive);
+    }
+  }
+
+  async function createOrganization() {
+    const orgName = (els.organizationNameInput?.value || '').trim();
+    if (!orgName) {
+      setGlobalError(els, 'Nama organisasi wajib diisi.');
+      return;
+    }
+    setBlockingLoading(els, true, 'Membuat organisasi...');
+    setGlobalError(els, '');
+    try {
+      const folderRes = await gapi.client.drive.files.create({
+        resource: { name: `Org ${orgName} - Images`, mimeType: 'application/vnd.google-apps.folder' },
+        fields: 'id'
+      });
+      const sheetRes = await gapi.client.sheets.spreadsheets.create({
+        resource: { properties: { title: `Org ${orgName} - Journal` } }
+      });
+      saveOrgContext({
+        name: orgName,
+        spreadsheetId: sheetRes.result.spreadsheetId,
+        folderId: folderRes.result.id,
+        ownerEmail: state.userEmail
+      });
+      closeOrganizationModal(els);
+      await setupBackend();
+      await loadJournalEntries();
+    } catch (err) {
+      setGlobalError(els, 'Gagal membuat organisasi.');
+    } finally {
+      setBlockingLoading(els, false);
+    }
+  }
+
+  async function joinOrganizationFromInput() {
+    const payload = parseInviteInput(els.organizationInviteInput?.value || '');
+    if (!payload?.spreadsheetId || !payload?.folderId) {
+      setGlobalError(els, 'Invite tidak valid.');
+      return;
+    }
+    if (payload.targetEmail && state.userEmail && payload.targetEmail !== state.userEmail.toLowerCase()) {
+      setGlobalError(els, 'Invite ini hanya untuk email yang ditentukan owner.');
+      return;
+    }
+    setBlockingLoading(els, true, 'Bergabung ke organisasi...');
+    setGlobalError(els, '');
+    try {
+      saveOrgContext({
+        name: payload.name || 'Organisasi',
+        spreadsheetId: payload.spreadsheetId,
+        folderId: payload.folderId,
+        ownerEmail: payload.ownerEmail || ''
+      });
+      closeOrganizationModal(els);
+      await setupBackend();
+      await loadJournalEntries();
+    } catch (err) {
+      setGlobalError(els, 'Gagal join organisasi. Pastikan Anda sudah diberi akses oleh owner.');
+    } finally {
+      setBlockingLoading(els, false);
+    }
+  }
+
+  async function copyOrganizationInvite() {
+    if (!isOrgMode()) {
+      setGlobalError(els, 'Anda belum berada di mode organisasi.');
+      return;
+    }
+    const inviteLink = getOrgInviteLink();
+    if (!inviteLink) return;
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setGlobalError(els, ''); // clear old error
+      alert('Invite link berhasil disalin.');
+    } catch (err) {
+      setGlobalError(els, 'Gagal menyalin invite link.');
+    }
+  }
+
+  async function grantDriveWriteAccess(fileId, email) {
+    await gapi.client.drive.permissions.create({
+      fileId,
+      sendNotificationEmail: true,
+      resource: {
+        type: 'user',
+        role: 'writer',
+        emailAddress: email
+      }
+    });
+  }
+
+  async function shareAndCopyInvite() {
+    if (!isOrgMode()) {
+      setGlobalError(els, 'Aktifkan mode organisasi terlebih dahulu.');
+      return;
+    }
+    const email = (els.inviteEmailInput?.value || '').trim().toLowerCase();
+    if (!email) {
+      setGlobalError(els, 'Isi email anggota terlebih dahulu.');
+      return;
+    }
+    setBlockingLoading(els, true, 'Membagikan akses organisasi...');
+    setGlobalError(els, '');
+    try {
+      await grantDriveWriteAccess(state.orgContext.spreadsheetId, email);
+      await grantDriveWriteAccess(state.orgContext.folderId, email);
+      const inviteLink = getOrgInviteLinkForEmail(email);
+      await navigator.clipboard.writeText(inviteLink);
+      alert('Akses berhasil dibagikan dan invite link sudah disalin.');
+    } catch (err) {
+      setGlobalError(els, 'Gagal share akses. Pastikan Anda owner resource dan email valid.');
+    } finally {
+      setBlockingLoading(els, false);
+    }
+  }
+
+  async function switchToPersonalMode() {
+    const proceed = confirm('Keluar dari mode organisasi dan kembali ke mode personal?');
+    if (!proceed) return;
+    saveOrgContext(null);
+    closeOrganizationModal(els);
+    setBlockingLoading(els, true, 'Beralih ke mode personal...');
+    try {
+      await setupBackend();
+      await loadJournalEntries();
+    } finally {
+      setBlockingLoading(els, false);
+    }
+  }
+
   function addSettingField() {
     const current = readSettingsFields(els);
     current.push({ id: `f${current.length + 1}`, label: 'Field Baru', type: 'text', required: false, options: [] });
@@ -814,13 +1239,14 @@ function createApp() {
   }
 
   async function applySettings() {
-    const nextSchema = readSettingsFields(els).map((field, idx) => ({
+    const baseSchema = readSettingsFields(els).map((field, idx) => ({
       id: `f${idx + 1}`,
       label: field.label,
       type: field.type,
       required: field.required,
       options: Array.isArray(field.options) ? field.options : []
     }));
+    const nextSchema = isOrgMode() ? ensureOrgSchema(baseSchema) : normalizeSchema(baseSchema);
 
     const validationError = validateSchema(nextSchema);
     if (validationError) {
@@ -837,7 +1263,7 @@ function createApp() {
     try {
       state.schema = nextSchema;
       await saveSchemaByAccount(nextSchema);
-      renderDynamicForm(els, state.schema);
+      renderDynamicForm(els, state.schema, getDefaultFormValues());
       closeSettingsModal(els);
       await loadJournalEntries();
     } catch (err) {
@@ -856,7 +1282,7 @@ function createApp() {
 
   function openModalWrapper() {
     setModalEditing(els, false);
-    renderDynamicForm(els, state.schema);
+    renderDynamicForm(els, state.schema, getDefaultFormValues());
     openModal(els);
   }
 
@@ -864,7 +1290,7 @@ function createApp() {
     closeModal(els);
     resetEditState();
     setModalEditing(els, false);
-    renderDynamicForm(els, state.schema);
+    renderDynamicForm(els, state.schema, getDefaultFormValues());
   }
 
   function previewImageWrapper(input) {

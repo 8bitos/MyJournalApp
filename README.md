@@ -1,60 +1,47 @@
 # MyJournal App
 
-MyJournal adalah aplikasi jurnal bulanan berbasis web yang menyimpan:
-- Data catatan ke **Google Sheets**
-- Gambar ke **Google Drive**
+MyJournal adalah aplikasi jurnal bulanan berbasis web yang menyimpan data ke Google Sheets dan gambar ke Google Drive.
 
-Setiap data dikelompokkan per bulan (sheet `YYYY-MM`) agar rapi dan mudah direkap.
+Live: https://bk-spensix.web.app/
 
-## Live Demo
-
-Uji aplikasi di:
-
-**https://bk-spensix.web.app/**
-
-## Ringkasan Fitur
+## Fitur Utama
 
 - Login Google OAuth
-- Penyimpanan data ke Google Sheets
-- Penyimpanan gambar ke Google Drive
-- History bulanan (per sheet `YYYY-MM`)
+- Simpan catatan ke Google Sheets
+- Simpan gambar ke Google Drive
+- Riwayat bulanan per sheet (`YYYY-MM`)
 - Export CSV per bulan aktif
-- Edit/Hapus catatan
+- Edit/hapus catatan
 - Dark mode
-- Modal bantuan
-- Setting Input dinamis:
-  - Tambah/hapus field
-  - Ubah label
-  - Ubah tipe field (`text`, `textarea`, `date`, `time`, `select`)
-  - Opsi dropdown custom untuk tipe `select`
-  - Set field wajib isi
-  - Reset ke default
-- Setting Input berbasis akun Google (bukan sekadar browser lokal)
-- Pagination + pengaturan jumlah item per halaman
+- Loading overlay saat login/simpan/proses API
+- Bantuan penggunaan di aplikasi
+- Setting Input dinamis (label, tipe, wajib, opsi dropdown, reset default)
+- Setting Input berbasis akun Google (disimpan di sheet `_CONFIG`)
+- Mode Organisasi (opsional): buat/join organisasi, invite anggota, kerja kolaboratif pada sheet/folder yang sama
+- Pagination + page size selector
 
 ## Arsitektur Data
 
-### 1) Google Drive
+### Google Drive
 
-- Folder default gambar:
-  - `My Monthly Journal - Images`
-- File gambar dari form upload disimpan ke folder ini.
+- Folder personal default: `My Monthly Journal - Images`
+- Gambar catatan di-upload ke folder ini (atau folder organisasi saat mode organisasi aktif)
 
-### 2) Google Sheets
+### Google Sheets
 
-- Spreadsheet default:
-  - `My Monthly Journal - Data`
-- Sheet bulanan:
-  - Format nama `YYYY-MM` (contoh `2026-02`, `2026-03`)
-- Sheet konfigurasi:
-  - `_CONFIG`
-  - Menyimpan konfigurasi schema per akun Google
+- Spreadsheet personal default: `My Monthly Journal - Data`
+- Sheet bulanan: format `YYYY-MM` (contoh `2026-02`)
+- Sheet konfigurasi akun: `_CONFIG`
 
-### 3) Skema Kolom
+### Mode Personal vs Organisasi
 
-Kolom dinamis mengikuti Setting Input user, lalu sistem menambahkan:
-- `Link Gambar`
-- `ID Gambar`
+- Personal:
+  - Resource (spreadsheet + folder) milik user login
+  - Cocok untuk pemakaian individual
+- Organisasi:
+  - Resource milik organisasi (owner)
+  - Anggota yang join menulis ke resource yang sama
+  - Owner bisa share akses Editor + kirim invite
 
 ## Struktur Project
 
@@ -63,142 +50,129 @@ Kolom dinamis mengikuti Setting Input user, lalu sistem menambahkan:
 ├── index.html
 ├── firebase.json
 ├── package.json
-├── src/
-│   ├── app.js
-│   ├── ui.js
-│   ├── images.js
-│   ├── storage.js
-│   ├── config.js
-│   └── main.js
-└── readmin.md
+├── README.md
+├── .env.example
+└── src/
+    ├── app.js
+    ├── ui.js
+    ├── images.js
+    ├── storage.js
+    ├── config.js
+    └── main.js
 ```
 
 ## Teknologi
 
-- Vite (frontend bundler)
+- Vite
 - Vanilla JavaScript (ES Modules)
 - Tailwind CSS (CDN)
 - Google API Client (`gapi`)
-- Google Identity Services (OAuth)
-- Firebase Hosting (deployment)
+- Google Identity Services
+- Firebase Hosting
 
 ## Prasyarat
 
 - Node.js + npm
-- Akun Google Cloud dengan:
-  - OAuth Client ID (Web)
-  - API Key
-  - Google Drive API enabled
-  - Google Sheets API enabled
-- Firebase CLI (untuk deployment)
+- Google Cloud Project aktif
+- OAuth Client ID (Web)
+- API Key
+- Google Drive API enabled
+- Google Sheets API enabled
+- Firebase CLI (untuk deploy)
 
 ## Konfigurasi Environment
 
-Buat file `.env`:
+Buat `.env`:
 
 ```env
 VITE_GOOGLE_CLIENT_ID=YOUR_CLIENT_ID.apps.googleusercontent.com
 VITE_GOOGLE_API_KEY=YOUR_API_KEY
 ```
 
-Contoh template tersedia di `.env.example`.
+## Setup Google Cloud
 
-## Setup Google Cloud (Detail)
+1. Enable API di Google Cloud Console:
+- Google Drive API
+- Google Sheets API
 
-### 1. Aktifkan API
-
-Di Google Cloud Console > APIs & Services > Library:
-- Enable **Google Drive API**
-- Enable **Google Sheets API**
-
-### 2. OAuth Consent Screen
-
-- Isi data aplikasi
+2. OAuth consent screen:
 - Tambahkan scope:
   - `https://www.googleapis.com/auth/drive.file`
   - `https://www.googleapis.com/auth/spreadsheets`
   - `https://www.googleapis.com/auth/userinfo.email`
 
-### 3. OAuth Client ID (Web)
-
-- Authorized JavaScript origins:
+3. OAuth Client ID (Web):
+- Authorized JavaScript origins minimal:
   - `http://localhost:5173`
-  - Tambahkan domain produksi bila perlu
+  - domain produksi (mis. `https://bk-spensix.web.app` jika dipakai)
 
-### 4. API Key Restriction
+4. API key restriction (disarankan):
+- HTTP referrer sesuai domain local + production
+- Batasi ke Drive API dan Sheets API
 
-Disarankan:
-- Application restriction: HTTP referrer
-  - `http://localhost:5173/*`
-  - domain produksi
-- API restriction:
-  - Google Drive API
-  - Google Sheets API
-
-## Jalankan Lokal
+## Menjalankan Lokal
 
 ```bash
 npm install
 npm run dev
 ```
 
-Buka URL Vite yang tampil di terminal (default `http://localhost:5173`).
+Buka URL Vite (default `http://localhost:5173`).
 
-## Build Produksi
+## Build
 
 ```bash
 npm run build
 ```
 
-Output akan berada di folder `dist/`.
+Output ke folder `dist/`.
 
-## Deploy ke Firebase Hosting
-
-Project ini sudah disiapkan deploy dari `dist`.
+## Deploy Firebase Hosting
 
 ```bash
 firebase login
 firebase deploy --only hosting --project bk-spensix
 ```
 
-## Alur Penggunaan Aplikasi
+## Cara Pakai
 
-### 1) Login
+### 1. Login dan Inisialisasi
 
-- Klik **Masuk dengan Google**
-- Sistem inisialisasi Drive + Sheets
-- Jika belum ada, folder dan spreadsheet akan dibuat otomatis
+- Klik `Masuk dengan Google`
+- Sistem akan menyiapkan resource personal jika belum ada:
+  - Spreadsheet `My Monthly Journal - Data`
+  - Folder `My Monthly Journal - Images`
 
-### 2) Tambah Catatan
+### 2. Tambah Catatan
 
-- Klik **Tambah Catatan**
-- Isi field
+- Klik `Tambah Catatan`
+- Isi field sesuai struktur input
 - Upload gambar
-- Simpan
+- Klik `Simpan`
 
-Catatan akan masuk ke sheet sesuai bulan dari field tanggal.
+Catatan akan masuk ke sheet bulan berdasarkan field bertipe `date`.
 
-### 3) Riwayat Bulanan
+### 3. Riwayat Bulanan
 
-- Pilih bulan dari dropdown Riwayat
-- Data ditampilkan sesuai bulan aktif
+- Pilih bulan dari dropdown bulan
+- Data tampil sesuai bulan aktif
+- Saat mode organisasi aktif, tersedia filter guru (jika field `Nama Guru` ada)
 
-### 4) Edit/Hapus
+### 4. Export Bulanan
 
-- Edit dari kartu catatan
-- Jika tanggal diganti ke bulan lain, data dipindah otomatis ke sheet bulan target
-- Hapus juga akan mencoba menghapus gambar di Drive
+- Pilih bulan target
+- Klik `Export Bulan`
+- File terunduh sebagai `journal-YYYY-MM.csv`
 
-### 5) Export
+### 5. Rekap Sheets
 
-- Pilih bulan
-- Klik **Export Bulan**
-- File `journal-YYYY-MM.csv` terunduh
+- Klik `Buka Rekap (Sheets)` untuk membuka spreadsheet aktif
 
-### 6) Buka Rekap
+### 6. Setting Input
 
-- Klik **Buka Rekap (Sheets)** untuk langsung membuka spreadsheet aktif
+Buka `Setting Input` dari menu.
 
+<<<<<<< HEAD
 ## Setting Input 
 
 Fitur ini untuk kustomisasi form input sesuai kebutuhan pengguna.
@@ -234,39 +208,65 @@ Kelas 7.1, Kelas 7.2, Kelas 7.3
 ```
 
 ### Validasi Setting
+=======
+Fungsi kontrol:
+- Label: nama kolom/field
+- Type: `text`, `textarea`, `date`, `time`, `select`
+- Wajib: field harus diisi sebelum submit
+- Opsi dropdown: khusus `select`, pisahkan opsi dengan koma
+- Tambah Field: tambah field baru
+- Reset Default: kembali ke struktur bawaan
+>>>>>>> 6b24d31 (Initial commit: My Journal V.1.2)
 
+Validasi:
 - Minimal 1 field harus bertipe `date`
-- Label field tidak boleh kosong
-- Field `select` harus memiliki minimal 1 opsi
+- Label tidak boleh kosong
+- Field `select` harus punya minimal 1 opsi
 
-### Scope Penyimpanan Setting
+Penyimpanan setting:
+- Disimpan per akun Google di `_CONFIG`
+- Tidak otomatis mengubah setting akun Google lain
 
-Setting disimpan per akun Google (di sheet `_CONFIG`), sehingga:
-- Akun yang sama bisa membawa setting ke device/browser lain
-- Akun lain tidak terpengaruh
+### 7. Mode Organisasi (Opsional)
 
-## UI/UX Notes
+Akses dari tombol `Organisasi` di samping nama user.
 
-- Mobile card dioptimalkan agar compact
-- Grid mobile mendukung 2 card per baris
-- Pagination tersedia dengan ukuran halaman yang dapat dipilih user
-- Dark mode disimpan ke preferensi user
+Alur utama:
+1. Owner klik `Buat Organisasi`
+2. Owner masuk `Kelola Organisasi`
+3. Owner isi email anggota lalu klik `Share + Copy Invite`
+4. Anggota buka link invite atau paste token di menu `Join Organisasi`
+5. Setelah join, anggota menulis ke spreadsheet/folder organisasi
 
-## Troubleshooting
+Catatan penting:
+- Default aplikasi tetap mode personal
+- Owner harus memberi akses editor; tanpa akses, anggota bisa gagal simpan
+- Tombol `Kembali ke Personal` untuk keluar mode organisasi
 
-### Login mentok / loading terus
+## Lokasi Akses File di Drive
 
-Periksa:
-- OAuth origin sesuai (`http://localhost:5173`)
-- API key restriction benar
-- Drive/Sheets API sudah enabled
+- Personal mode:
+  - Folder gambar: `My Monthly Journal - Images`
+  - Spreadsheet: `My Monthly Journal - Data`
+- Organisasi mode:
+  - Folder + spreadsheet mengikuti resource organisasi yang aktif
 
-### Error 403 discovery
+## Troubleshooting Ringkas
 
-Biasanya API key restriction salah atau API belum di-enable.
+- Login loading terus:
+  - Cek origin OAuth sesuai URL aplikasi
+  - Cek API key dan restriction
+  - Cek Drive API / Sheets API enabled
+- Error 403 discovery:
+  - API key restriction salah atau API belum enabled
+- `origin_mismatch`:
+  - Origin OAuth tidak sama dengan domain aplikasi
+- Gambar gagal upload:
+  - Kuota Drive penuh / token expired / permission kurang
 
-### `origin_mismatch`
+## Terms & Conditions
 
+<<<<<<< HEAD
 Origin di OAuth Client ID tidak sama dengan URL aplikasi.
 
 ### Gambar gagal upload
@@ -287,13 +287,10 @@ Kemungkinan:
 2. Beban storage mengikuti kuota Google Drive pengguna.
 3. Jika kuota Drive penuh, upload/simpan bisa gagal.
 4. Pengguna bertanggung jawab menjaga keamanan akun dan data.
+=======
+1. Seluruh data dan file disimpan pada Google account pengguna/organisasi, bukan server aplikasi terpisah.
+2. Beban storage sepenuhnya mengikuti kuota Google Drive pemilik resource.
+3. Jika kuota penuh, upload/simpan dapat gagal.
+4. Pengguna bertanggung jawab menjaga keamanan akun, data, dan izin berbagi file.
+>>>>>>> 6b24d31 (Initial commit: My Journal V.1.2)
 5. Disarankan backup berkala spreadsheet dan folder gambar.
-
-## Catatan Pengembangan Lanjutan
-
-Ide peningkatan berikutnya:
-- Export XLSX/PDF per bulan
-- Search/filter lanjutan
-- Multi-role user management
-- Audit log aktivitas
-
