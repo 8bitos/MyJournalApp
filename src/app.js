@@ -53,6 +53,8 @@ const THEME_STORAGE_KEY = 'journal_theme_mode';
 const CONFIG_SHEET_NAME = '_CONFIG';
 const PAGE_SIZE_STORAGE_KEY = 'journal_page_size';
 const ORG_CONTEXT_STORAGE_KEY = 'journal_org_context';
+const ORG_LAST_CONTEXT_STORAGE_KEY = 'journal_last_org_context';
+const ORG_REGISTRY_STORAGE_KEY = 'journal_org_registry';
 const MONTH_SHEET_PATTERN = /^\d{4}-\d{2}$/;
 const MONTH_NAMES = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
@@ -146,7 +148,71 @@ function createApp() {
       ownerEmail: String(context.ownerEmail || '')
     };
     localStorage.setItem(ORG_CONTEXT_STORAGE_KEY, JSON.stringify(clean));
+    localStorage.setItem(ORG_LAST_CONTEXT_STORAGE_KEY, JSON.stringify(clean));
+    upsertOrgRegistry(clean);
     state.orgContext = clean;
+  }
+
+  function loadLastOrgContext() {
+    const raw = localStorage.getItem(ORG_LAST_CONTEXT_STORAGE_KEY);
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.mode === 'org' && parsed.spreadsheetId && parsed.folderId) {
+        return parsed;
+      }
+      return null;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function loadOrgRegistry() {
+    const raw = localStorage.getItem(ORG_REGISTRY_STORAGE_KEY);
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter((item) => item && item.spreadsheetId && item.folderId);
+    } catch (err) {
+      return [];
+    }
+  }
+
+  function saveOrgRegistry(list) {
+    localStorage.setItem(ORG_REGISTRY_STORAGE_KEY, JSON.stringify(list));
+  }
+
+  function upsertOrgRegistry(context) {
+    const list = loadOrgRegistry();
+    const normalized = {
+      mode: 'org',
+      name: String(context.name || 'Organisasi'),
+      spreadsheetId: String(context.spreadsheetId || ''),
+      folderId: String(context.folderId || ''),
+      ownerEmail: String(context.ownerEmail || '')
+    };
+    const existingIndex = list.findIndex((item) => item.spreadsheetId === normalized.spreadsheetId);
+    if (existingIndex >= 0) {
+      list[existingIndex] = normalized;
+    } else {
+      list.push(normalized);
+    }
+    saveOrgRegistry(list);
+  }
+
+  function removeOrgFromRegistry(spreadsheetId) {
+    const list = loadOrgRegistry();
+    const next = list.filter((item) => item.spreadsheetId !== spreadsheetId);
+    saveOrgRegistry(next);
+  }
+
+  function isCurrentUserOrgOwner() {
+    if (!isOrgMode()) return false;
+    const owner = String(state.orgContext.ownerEmail || '').toLowerCase();
+    const user = String(state.userEmail || '').toLowerCase();
+    if (!owner || !user) return false;
+    return owner === user;
   }
 
   function encodeInvitePayload(payload) {
@@ -175,11 +241,11 @@ function createApp() {
     }
   }
 
-  function getOrgInviteLink() {
-    return getOrgInviteLinkForEmail('');
+  function getOrgInviteToken() {
+    return getOrgInviteTokenForEmail('');
   }
 
-  function getOrgInviteLinkForEmail(targetEmail = '') {
+  function getOrgInviteTokenForEmail(targetEmail = '') {
     if (!isOrgMode()) return '';
     const payload = {
       name: state.orgContext.name,
@@ -189,9 +255,7 @@ function createApp() {
       targetEmail: String(targetEmail || '').trim().toLowerCase(),
       createdAt: new Date().toISOString()
     };
-    const token = encodeInvitePayload(payload);
-    const base = `${window.location.origin}${window.location.pathname}`;
-    return `${base}?invite=${encodeURIComponent(token)}`;
+    return encodeInvitePayload(payload);
   }
 
   function updateModeUi() {
@@ -219,6 +283,17 @@ function createApp() {
       if (!shouldShow) {
         els.teacherFilterSelector.value = 'ALL';
       }
+    }
+    if (els.rejoinLastOrgButton) {
+      const hasLastOrg = Boolean(loadLastOrgContext());
+      const showRejoin = !orgActive && hasLastOrg;
+      els.rejoinLastOrgButton.classList.toggle('hidden', !showRejoin);
+    }
+    if (els.deleteOrganizationButton) {
+      const canDelete = orgActive && isCurrentUserOrgOwner();
+      els.deleteOrganizationButton.disabled = !canDelete;
+      els.deleteOrganizationButton.classList.toggle('opacity-50', !canDelete);
+      els.deleteOrganizationButton.classList.toggle('cursor-not-allowed', !canDelete);
     }
   }
 
@@ -531,6 +606,15 @@ function createApp() {
       }
       toggleOrganizationSection('active');
     };
+    if (els.rejoinLastOrgButton) {
+      els.rejoinLastOrgButton.onclick = rejoinLastOrganization;
+    }
+    if (els.saveOrganizationButton) {
+      els.saveOrganizationButton.onclick = saveCurrentOrganization;
+    }
+    if (els.deleteOrganizationButton) {
+      els.deleteOrganizationButton.onclick = deleteCurrentOrganization;
+    }
 
     try {
       await applyInviteFromUrlIfExists();
@@ -1160,14 +1244,14 @@ function createApp() {
       setGlobalError(els, 'Anda belum berada di mode organisasi.');
       return;
     }
-    const inviteLink = getOrgInviteLink();
-    if (!inviteLink) return;
+    const inviteToken = getOrgInviteToken();
+    if (!inviteToken) return;
     try {
-      await navigator.clipboard.writeText(inviteLink);
+      await navigator.clipboard.writeText(inviteToken);
       setGlobalError(els, ''); // clear old error
-      alert('Invite link berhasil disalin.');
+      alert('Invite token berhasil disalin.');
     } catch (err) {
-      setGlobalError(els, 'Gagal menyalin invite link.');
+      setGlobalError(els, 'Gagal menyalin invite token.');
     }
   }
 
@@ -1183,6 +1267,29 @@ function createApp() {
     });
   }
 
+  function isValidEmailFormat(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
+  }
+
+  function parseShareError(err) {
+    const message = String(err?.result?.error?.message || err?.message || '').toLowerCase();
+    const reason = String(err?.result?.error?.errors?.[0]?.reason || '').toLowerCase();
+
+    if (message.includes('invalid') && message.includes('email')) {
+      return 'Format email tidak valid.';
+    }
+    if (message.includes('not found') || message.includes('cannot find') || reason.includes('notfound')) {
+      return 'Email tidak ditemukan sebagai akun Google.';
+    }
+    if (message.includes('invalidsharingrequest') || message.includes('sharing') || reason.includes('invalidsharingrequest')) {
+      return 'Email tidak bisa di-share. Pastikan email adalah akun Google yang aktif.';
+    }
+    if (message.includes('forbidden') || reason.includes('forbidden')) {
+      return 'Akses share ditolak. Pastikan Anda owner resource organisasi.';
+    }
+    return 'Gagal validasi email atau share akses.';
+  }
+
   async function shareAndCopyInvite() {
     if (!isOrgMode()) {
       setGlobalError(els, 'Aktifkan mode organisasi terlebih dahulu.');
@@ -1193,16 +1300,97 @@ function createApp() {
       setGlobalError(els, 'Isi email anggota terlebih dahulu.');
       return;
     }
+    if (!isValidEmailFormat(email)) {
+      setGlobalError(els, 'Format email tidak valid.');
+      return;
+    }
     setBlockingLoading(els, true, 'Membagikan akses organisasi...');
     setGlobalError(els, '');
     try {
+      // Step 1: validasi email + akses owner pada spreadsheet terlebih dahulu.
       await grantDriveWriteAccess(state.orgContext.spreadsheetId, email);
+      // Step 2: jika valid, lanjutkan share folder gambar.
       await grantDriveWriteAccess(state.orgContext.folderId, email);
-      const inviteLink = getOrgInviteLinkForEmail(email);
-      await navigator.clipboard.writeText(inviteLink);
-      alert('Akses berhasil dibagikan dan invite link sudah disalin.');
+      const inviteToken = getOrgInviteTokenForEmail(email);
+      await navigator.clipboard.writeText(inviteToken);
+      alert('Akses berhasil dibagikan dan invite token sudah disalin.');
     } catch (err) {
-      setGlobalError(els, 'Gagal share akses. Pastikan Anda owner resource dan email valid.');
+      setGlobalError(els, parseShareError(err));
+    } finally {
+      setBlockingLoading(els, false);
+    }
+  }
+
+  async function rejoinLastOrganization() {
+    if (isOrgMode()) {
+      setGlobalError(els, '');
+      return;
+    }
+    const lastOrg = loadLastOrgContext();
+    if (!lastOrg) {
+      setGlobalError(els, 'Belum ada organisasi terakhir yang tersimpan.');
+      return;
+    }
+    setBlockingLoading(els, true, 'Masuk ke organisasi terakhir...');
+    setGlobalError(els, '');
+    try {
+      saveOrgContext(lastOrg);
+      closeOrganizationModal(els);
+      await setupBackend();
+      await loadJournalEntries();
+    } catch (err) {
+      setGlobalError(els, 'Gagal masuk ke organisasi terakhir. Pastikan akses Anda masih ada.');
+    } finally {
+      setBlockingLoading(els, false);
+    }
+  }
+
+  function saveCurrentOrganization() {
+    if (!isOrgMode()) {
+      setGlobalError(els, 'Aktifkan mode organisasi terlebih dahulu.');
+      return;
+    }
+    upsertOrgRegistry(state.orgContext);
+    setGlobalError(els, '');
+    alert('Organisasi berhasil disimpan.');
+  }
+
+  async function deleteCurrentOrganization() {
+    if (!isOrgMode()) {
+      setGlobalError(els, 'Aktifkan mode organisasi terlebih dahulu.');
+      return;
+    }
+    if (!isCurrentUserOrgOwner()) {
+      setGlobalError(els, 'Hanya host/owner yang bisa menghapus organisasi.');
+      return;
+    }
+
+    const orgName = state.orgContext.name || 'Organisasi';
+    const confirmText = prompt(`Ketik HAPUS untuk menghapus organisasi "${orgName}" beserta spreadsheet dan folder Drive-nya.`);
+    if (confirmText !== 'HAPUS') return;
+
+    const deletingSpreadsheetId = state.orgContext.spreadsheetId;
+    const deletingFolderId = state.orgContext.folderId;
+
+    setBlockingLoading(els, true, 'Menghapus organisasi...');
+    setGlobalError(els, '');
+    try {
+      await gapi.client.drive.files.delete({ fileId: deletingSpreadsheetId });
+      await gapi.client.drive.files.delete({ fileId: deletingFolderId });
+
+      removeOrgFromRegistry(deletingSpreadsheetId);
+      const lastOrg = loadLastOrgContext();
+      if (lastOrg?.spreadsheetId === deletingSpreadsheetId) {
+        localStorage.removeItem(ORG_LAST_CONTEXT_STORAGE_KEY);
+      }
+
+      saveOrgContext(null);
+      closeOrganizationModal(els);
+      await setupBackend();
+      await loadJournalEntries();
+      alert('Organisasi berhasil dihapus.');
+    } catch (err) {
+      setGlobalError(els, 'Gagal menghapus organisasi. Pastikan Anda owner dan masih punya izin hapus file.');
     } finally {
       setBlockingLoading(els, false);
     }

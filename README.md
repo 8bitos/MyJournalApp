@@ -1,8 +1,8 @@
 # MyJournal App
 
-MyJournal adalah aplikasi jurnal bulanan berbasis web yang menyimpan data ke Google Sheets dan gambar ke Google Drive.
+MyJournal adalah aplikasi jurnal bulanan berbasis web untuk menyimpan catatan ke Google Sheets dan gambar ke Google Drive.
 
-Live: https://bk-spensix.web.app/
+Live demo: https://bk-spensix.web.app/
 
 ## Fitur Utama
 
@@ -11,37 +11,40 @@ Live: https://bk-spensix.web.app/
 - Simpan gambar ke Google Drive
 - Riwayat bulanan per sheet (`YYYY-MM`)
 - Export CSV per bulan aktif
-- Edit/hapus catatan
+- Edit dan hapus catatan
 - Dark mode
-- Loading overlay saat login/simpan/proses API
+- Loading overlay saat proses login/simpan
 - Bantuan penggunaan di aplikasi
-- Setting Input dinamis (label, tipe, wajib, opsi dropdown, reset default)
-- Setting Input berbasis akun Google (disimpan di sheet `_CONFIG`)
-- Mode Organisasi (opsional): buat/join organisasi, invite anggota, kerja kolaboratif pada sheet/folder yang sama
-- Pagination + page size selector
+- Setting input dinamis (label, tipe, wajib, opsi dropdown, reset)
+- Setting input berbasis akun Google (`_CONFIG`)
+- Mode Organisasi (opsional)
+  - Buat organisasi
+  - Join organisasi via token invite
+  - Share akses anggota + copy token
+  - Masuk lagi ke organisasi terakhir
+  - Simpan organisasi
+  - Hapus organisasi (khusus owner)
+- Pagination + pilihan jumlah item per halaman
 
 ## Arsitektur Data
 
 ### Google Drive
 
-- Folder personal default: `My Monthly Journal - Images`
-- Gambar catatan di-upload ke folder ini (atau folder organisasi saat mode organisasi aktif)
+- Personal mode:
+  - Folder default: `My Monthly Journal - Images`
+- Organisasi mode:
+  - Folder mengikuti resource organisasi aktif
 
 ### Google Sheets
 
-- Spreadsheet personal default: `My Monthly Journal - Data`
-- Sheet bulanan: format `YYYY-MM` (contoh `2026-02`)
-- Sheet konfigurasi akun: `_CONFIG`
-
-### Mode Personal vs Organisasi
-
-- Personal:
-  - Resource (spreadsheet + folder) milik user login
-  - Cocok untuk pemakaian individual
-- Organisasi:
-  - Resource milik organisasi (owner)
-  - Anggota yang join menulis ke resource yang sama
-  - Owner bisa share akses Editor + kirim invite
+- Personal mode:
+  - Spreadsheet default: `My Monthly Journal - Data`
+- Organisasi mode:
+  - Spreadsheet mengikuti resource organisasi aktif
+- Sheet bulanan:
+  - `YYYY-MM` (contoh `2026-02`)
+- Sheet konfigurasi per akun:
+  - `_CONFIG`
 
 ## Struktur Project
 
@@ -61,28 +64,9 @@ Live: https://bk-spensix.web.app/
     └── main.js
 ```
 
-## Teknologi
-
-- Vite
-- Vanilla JavaScript (ES Modules)
-- Tailwind CSS (CDN)
-- Google API Client (`gapi`)
-- Google Identity Services
-- Firebase Hosting
-
-## Prasyarat
-
-- Node.js + npm
-- Google Cloud Project aktif
-- OAuth Client ID (Web)
-- API Key
-- Google Drive API enabled
-- Google Sheets API enabled
-- Firebase CLI (untuk deploy)
-
 ## Konfigurasi Environment
 
-Buat `.env`:
+Buat file `.env`:
 
 ```env
 VITE_GOOGLE_CLIENT_ID=YOUR_CLIENT_ID.apps.googleusercontent.com
@@ -91,7 +75,7 @@ VITE_GOOGLE_API_KEY=YOUR_API_KEY
 
 ## Setup Google Cloud
 
-1. Enable API di Google Cloud Console:
+1. Enable API:
 - Google Drive API
 - Google Sheets API
 
@@ -102,13 +86,13 @@ VITE_GOOGLE_API_KEY=YOUR_API_KEY
   - `https://www.googleapis.com/auth/userinfo.email`
 
 3. OAuth Client ID (Web):
-- Authorized JavaScript origins minimal:
+- Authorized origins minimal:
   - `http://localhost:5173`
-  - domain produksi (mis. `https://bk-spensix.web.app` jika dipakai)
+  - domain production (jika dipakai)
 
 4. API key restriction (disarankan):
-- HTTP referrer sesuai domain local + production
-- Batasi ke Drive API dan Sheets API
+- HTTP referrer sesuai domain
+- Batasi ke Drive API + Sheets API
 
 ## Menjalankan Lokal
 
@@ -117,15 +101,11 @@ npm install
 npm run dev
 ```
 
-Buka URL Vite (default `http://localhost:5173`).
-
 ## Build
 
 ```bash
 npm run build
 ```
-
-Output ke folder `dist/`.
 
 ## Deploy Firebase Hosting
 
@@ -136,161 +116,102 @@ firebase deploy --only hosting --project bk-spensix
 
 ## Cara Pakai
 
-### 1. Login dan Inisialisasi
+### 1) Login
 
 - Klik `Masuk dengan Google`
-- Sistem akan menyiapkan resource personal jika belum ada:
-  - Spreadsheet `My Monthly Journal - Data`
-  - Folder `My Monthly Journal - Images`
+- Sistem akan inisialisasi resource personal jika belum ada
 
-### 2. Tambah Catatan
+### 2) Tambah Catatan
 
 - Klik `Tambah Catatan`
-- Isi field sesuai struktur input
+- Isi field form
 - Upload gambar
 - Klik `Simpan`
 
 Catatan akan masuk ke sheet bulan berdasarkan field bertipe `date`.
 
-### 3. Riwayat Bulanan
+### 3) Riwayat Bulanan
 
-- Pilih bulan dari dropdown bulan
+- Pilih bulan dari dropdown
 - Data tampil sesuai bulan aktif
-- Saat mode organisasi aktif, tersedia filter guru (jika field `Nama Guru` ada)
 
-### 4. Export Bulanan
+### 4) Export Bulan
 
 - Pilih bulan target
 - Klik `Export Bulan`
-- File terunduh sebagai `journal-YYYY-MM.csv`
+- File `journal-YYYY-MM.csv` akan terunduh
 
-### 5. Rekap Sheets
+### 5) Setting Input
 
-- Klik `Buka Rekap (Sheets)` untuk membuka spreadsheet aktif
-
-### 6. Setting Input
-
-Buka `Setting Input` dari menu.
-
-<<<<<<< HEAD
-## Setting Input 
-
-Fitur ini untuk kustomisasi form input sesuai kebutuhan pengguna.
-
-### Kontrol yang Tersedia
-
-- **Label**
-  - Menentukan judul field pada form dan tampilan kartu
-- **Type**
-  - `text`: input singkat
-  - `textarea`: input panjang
-  - `date`: tanggal (wajib minimal ada satu field date)
-  - `time`: jam
-  - `select`: dropdown pilihan
-- **Wajib**
-  - Jika aktif, field harus diisi sebelum submit
-- **Hapus**
-  - Menghapus field dari struktur form
-- **Tambah Field**
-  - Menambahkan field baru
-- **Reset Default**
-  - Mengembalikan struktur bawaan
-
-### Khusus Type `select`
-
-Saat memilih type `select`, akan muncul area:
-- **Opsi dropdown (pisahkan dengan koma)**
-
-Contoh:
-
-```txt
-Kelas 7.1, Kelas 7.2, Kelas 7.3
-```
-
-### Validasi Setting
-=======
-Fungsi kontrol:
-- Label: nama kolom/field
-- Type: `text`, `textarea`, `date`, `time`, `select`
-- Wajib: field harus diisi sebelum submit
-- Opsi dropdown: khusus `select`, pisahkan opsi dengan koma
-- Tambah Field: tambah field baru
-- Reset Default: kembali ke struktur bawaan
->>>>>>> 6b24d31 (Initial commit: My Journal V.1.2)
+Atur struktur form sesuai kebutuhan:
+- Label
+- Type (`text`, `textarea`, `date`, `time`, `select`)
+- Wajib isi
+- Opsi dropdown (untuk `select`)
+- Tambah field
+- Reset default
 
 Validasi:
-- Minimal 1 field harus bertipe `date`
+- Minimal ada 1 field `date`
 - Label tidak boleh kosong
-- Field `select` harus punya minimal 1 opsi
+- `select` wajib punya minimal 1 opsi
 
 Penyimpanan setting:
 - Disimpan per akun Google di `_CONFIG`
-- Tidak otomatis mengubah setting akun Google lain
+- Tidak otomatis mengubah akun lain
 
-### 7. Mode Organisasi (Opsional)
+### 6) Mode Organisasi (Opsional)
 
-Akses dari tombol `Organisasi` di samping nama user.
+Akses dari `Menu -> Organisasi`.
 
-Alur utama:
+Alur umum:
 1. Owner klik `Buat Organisasi`
-2. Owner masuk `Kelola Organisasi`
+2. Owner buka `Kelola Organisasi`
 3. Owner isi email anggota lalu klik `Share + Copy Invite`
-4. Anggota buka link invite atau paste token di menu `Join Organisasi`
+4. Anggota paste token di `Join Organisasi`
 5. Setelah join, anggota menulis ke spreadsheet/folder organisasi
 
+Aksi organisasi:
+- `Share + Copy Invite`
+  - Validasi email
+  - Share editor ke spreadsheet + folder
+  - Copy token invite
+- `Copy Invite Token`
+  - Copy token tanpa proses share email
+- `Simpan Organisasi`
+  - Simpan organisasi aktif ke daftar lokal
+- `Masuk Lagi Terakhir`
+  - Aktifkan ulang organisasi terakhir tanpa paste token
+- `Kembali ke Personal`
+  - Keluar dari mode organisasi (resource organisasi tidak dihapus)
+- `Hapus Organisasi` (owner only)
+  - Menghapus spreadsheet + folder organisasi dari Google Drive
+
 Catatan penting:
-- Default aplikasi tetap mode personal
-- Owner harus memberi akses editor; tanpa akses, anggota bisa gagal simpan
-- Tombol `Kembali ke Personal` untuk keluar mode organisasi
+- Default aplikasi tetap personal mode
+- Anggota harus diberi akses oleh owner agar bisa menulis
+- Jika token ada tapi akses belum dishare, proses simpan bisa gagal
 
-## Lokasi Akses File di Drive
-
-- Personal mode:
-  - Folder gambar: `My Monthly Journal - Images`
-  - Spreadsheet: `My Monthly Journal - Data`
-- Organisasi mode:
-  - Folder + spreadsheet mengikuti resource organisasi yang aktif
-
-## Troubleshooting Ringkas
+## Troubleshooting
 
 - Login loading terus:
-  - Cek origin OAuth sesuai URL aplikasi
-  - Cek API key dan restriction
-  - Cek Drive API / Sheets API enabled
+  - Cek origin OAuth
+  - Cek API key restriction
+  - Cek Drive/Sheets API enabled
 - Error 403 discovery:
   - API key restriction salah atau API belum enabled
 - `origin_mismatch`:
-  - Origin OAuth tidak sama dengan domain aplikasi
+  - Origin OAuth tidak sama dengan URL aplikasi
 - Gambar gagal upload:
   - Kuota Drive penuh / token expired / permission kurang
+- Join organisasi tapi tetap data personal:
+  - Pastikan owner memakai `Share + Copy Invite`
+  - Pastikan ID spreadsheet pada `Buka Rekap` sama antar akun
 
 ## Terms & Conditions
 
-<<<<<<< HEAD
-Origin di OAuth Client ID tidak sama dengan URL aplikasi.
-
-### Gambar gagal upload
-
-Kemungkinan:
-- Kuota Google Drive habis
-- Token kedaluwarsa
-- Permission API bermasalah
-
-### Setting Input tidak berubah
-
-- Pastikan klik simpan pengaturan
-- Pastikan akun Google yang dipakai benar
-
-## Terms & Conditions 
-
-1. Data dan file disimpan di akun Google pengguna.
-2. Beban storage mengikuti kuota Google Drive pengguna.
-3. Jika kuota Drive penuh, upload/simpan bisa gagal.
-4. Pengguna bertanggung jawab menjaga keamanan akun dan data.
-=======
 1. Seluruh data dan file disimpan pada Google account pengguna/organisasi, bukan server aplikasi terpisah.
-2. Beban storage sepenuhnya mengikuti kuota Google Drive pemilik resource.
+2. Beban storage mengikuti kuota Google Drive pemilik resource.
 3. Jika kuota penuh, upload/simpan dapat gagal.
 4. Pengguna bertanggung jawab menjaga keamanan akun, data, dan izin berbagi file.
->>>>>>> 6b24d31 (Initial commit: My Journal V.1.2)
 5. Disarankan backup berkala spreadsheet dan folder gambar.

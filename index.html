@@ -325,22 +325,25 @@
                         </div>
                         <div>
                             <p class="font-semibold text-gray-900">9. Mode Organisasi (opsional)</p>
-                            <p>Tombol <b>Organisasi</b> berada di samping nama user. Secara default aplikasi tetap di mode personal.</p>
+                            <p>Tombol <b>Organisasi</b> ada di menu toolbar. Secara default aplikasi tetap di mode personal.</p>
                             <p>Mode ini dipakai jika beberapa guru/anggota ingin menulis pada spreadsheet dan folder gambar yang sama.</p>
                             <p>Konsep dasar:</p>
                             <p>- <b>Personal</b>: pakai spreadsheet + folder milik akun sendiri.</p>
                             <p>- <b>Organisasi</b>: pakai spreadsheet + folder milik organisasi (owner).</p>
-                            <p>Di modal Organisasi tersedia 3 tab aksi:</p>
+                            <p>Di modal Organisasi tersedia aksi:</p>
                             <p>1. <b>Buat Organisasi</b>: membuat resource organisasi baru (spreadsheet + folder images).</p>
-                            <p>2. <b>Join Organisasi</b>: gabung memakai invite link atau token dari owner.</p>
+                            <p>2. <b>Join Organisasi</b>: gabung memakai <b>token invite</b> dari owner.</p>
                             <p>3. <b>Kelola Organisasi</b>: owner dapat share akses editor dan membuat invite.</p>
                             <p>Tombol pada Kelola Organisasi:</p>
-                            <p>- <b>Share + Copy Invite</b>: memberi akses editor ke email anggota lalu menyalin link join.</p>
-                            <p>- <b>Copy Invite Link</b>: menyalin link invite tanpa proses share email.</p>
+                            <p>- <b>Share + Copy Invite</b>: validasi email, share akses editor ke spreadsheet + folder, lalu copy token invite.</p>
+                            <p>- <b>Copy Invite Token</b>: menyalin token invite tanpa proses share email.</p>
+                            <p>- <b>Simpan Organisasi</b>: menyimpan organisasi aktif ke daftar lokal akun/browser ini.</p>
+                            <p>- <b>Hapus Organisasi</b>: menghapus spreadsheet + folder organisasi (khusus host/owner).</p>
                             <p>- <b>Kembali ke Personal</b>: keluar dari mode organisasi dan kembali ke resource pribadi.</p>
+                            <p>- <b>Masuk Lagi Terakhir</b>: aktifkan ulang organisasi terakhir tanpa paste token ulang.</p>
                             <p>Catatan penting:</p>
                             <p>- Anggota wajib sudah diberi akses oleh owner agar bisa menulis data.</p>
-                            <p>- Jika hanya dapat link tanpa akses folder/sheet, biasanya user hanya bisa lihat atau akan gagal simpan.</p>
+                            <p>- Jika hanya dapat token tanpa akses folder/sheet, user bisa gagal simpan.</p>
                             <p>- Di mode organisasi, sistem menambahkan field <b>Nama Guru</b> agar rekap per guru lebih jelas.</p>
                         </div>
                         <div class="pt-2 border-t border-gray-200">
@@ -356,7 +359,7 @@
                             <p>- Data tabel tersimpan di spreadsheet: <code>My Monthly Journal - Data</code> dengan tab bulanan <code>YYYY-MM</code>.</p>
                             <p>- Konfigurasi setting input akun tersimpan di tab: <code>_CONFIG</code>.</p>
                             <p>8. Untuk penggunaan banyak guru BK dalam satu sekolah, gunakan fitur <b>Organisasi</b> (buat/join via invitation) agar semua anggota bekerja di spreadsheet dan folder organisasi yang sama.</p>
-                            <p>9. Owner organisasi dapat memakai tombol <b>Share + Copy Invite</b> untuk memberi akses editor ke email anggota sekaligus mengirim link join.</p>
+                            <p>9. Owner organisasi dapat memakai tombol <b>Share + Copy Invite</b> untuk memberi akses editor ke email anggota sekaligus menyalin token invite.</p>
                             <p>10. Perubahan setting input tetap bersifat per akun Google, termasuk ketika user sedang berada di mode organisasi.</p>
                         </div>
                     </div>
@@ -377,10 +380,11 @@
                     <h3 id="organization-title" class="text-lg font-semibold text-gray-900">Mode Organisasi</h3>
                     <p id="organization-current-info" class="text-sm text-gray-600 mt-1">Anda sedang memakai mode personal.</p>
 
-                    <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div class="mt-4 grid grid-cols-1 sm:grid-cols-4 gap-2">
                         <button id="org-open-create-button" type="button" class="px-3 py-2 rounded-md border text-sm text-gray-700 hover:bg-gray-50">Buat Organisasi</button>
                         <button id="org-open-join-button" type="button" class="px-3 py-2 rounded-md border text-sm text-gray-700 hover:bg-gray-50">Join Organisasi</button>
                         <button id="org-open-active-button" type="button" class="px-3 py-2 rounded-md border text-sm text-gray-700 hover:bg-gray-50">Kelola Organisasi</button>
+                        <button id="rejoin-last-org-button" type="button" class="hidden px-3 py-2 rounded-md border text-sm text-blue-700 hover:bg-blue-50">Masuk Lagi Terakhir</button>
                     </div>
 
                     <div id="org-create-section" class="hidden mt-4 p-3 border rounded-lg">
@@ -409,7 +413,9 @@
                             <button id="share-and-copy-invite-button" type="button" class="px-3 py-2 rounded-md border text-sm text-gray-700 hover:bg-gray-50">Share + Copy Invite</button>
                         </div>
                         <div class="mt-2 flex flex-wrap gap-2">
-                            <button id="copy-org-invite-button" type="button" class="px-3 py-2 rounded-md border text-sm text-gray-700 hover:bg-gray-50">Copy Invite Link</button>
+                            <button id="save-organization-button" type="button" class="px-3 py-2 rounded-md border text-sm text-blue-700 hover:bg-blue-50">Simpan Organisasi</button>
+                            <button id="copy-org-invite-button" type="button" class="px-3 py-2 rounded-md border text-sm text-gray-700 hover:bg-gray-50">Copy Invite Token</button>
+                            <button id="delete-organization-button" type="button" class="px-3 py-2 rounded-md border text-sm text-red-700 hover:bg-red-50">Hapus Organisasi</button>
                             <button id="switch-personal-button" type="button" class="px-3 py-2 rounded-md border text-sm text-red-600 hover:bg-red-50">Kembali ke Personal</button>
                         </div>
                     </div>
