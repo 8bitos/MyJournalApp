@@ -5,15 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jurnal Bulanan Saya</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Icon Font -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        /* Custom loader */
         .loader {
             border-top-color: #3498db;
             -webkit-animation: spinner 1.5s linear infinite;
             animation: spinner 1.5s linear infinite;
         }
+        body.dark {
+            background-color: #0f172a;
+            color: #e2e8f0;
+        }
+        body.dark .bg-white { background-color: #111827 !important; }
+        body.dark .bg-gray-50 { background-color: #0f172a !important; }
+        body.dark .bg-gray-100 { background-color: #1f2937 !important; }
+        body.dark .text-gray-900 { color: #f8fafc !important; }
+        body.dark .text-gray-800 { color: #e5e7eb !important; }
+        body.dark .text-gray-700 { color: #d1d5db !important; }
+        body.dark .text-gray-600 { color: #9ca3af !important; }
+        body.dark .text-gray-500 { color: #9ca3af !important; }
+        body.dark .text-gray-400 { color: #94a3b8 !important; }
+        body.dark .border, body.dark .border-t, body.dark .border-b, body.dark .border-gray-300 {
+            border-color: #374151 !important;
+        }
+        body.dark input, body.dark select, body.dark textarea {
+            background-color: #0b1220 !important;
+            color: #e5e7eb !important;
+            border-color: #334155 !important;
+        }
+        body.dark .hover\:bg-gray-50:hover { background-color: #1f2937 !important; }
         @keyframes spinner {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -22,7 +42,22 @@
 </head>
 <body class="bg-gray-50 min-h-screen font-sans">
 
-    <!-- LOGIN SCREEN -->
+    <div id="global-error" class="hidden bg-red-50 border-b border-red-200 text-red-700">
+        <div class="max-w-5xl mx-auto px-4 py-2 text-sm">
+            <span id="global-error-text"></span>
+        </div>
+    </div>
+
+    <div id="blocking-loading" class="hidden fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl px-6 py-5 flex items-center gap-4 min-w-[260px]">
+            <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-8 w-8"></div>
+            <div>
+                <p class="text-sm font-semibold text-gray-800">Mohon tunggu...</p>
+                <p id="blocking-loading-text" class="text-sm text-gray-500">Sedang memproses data.</p>
+            </div>
+        </div>
+    </div>
+
     <div id="login-screen" class="flex flex-col items-center justify-center min-h-screen p-4">
         <div class="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md w-full">
             <div class="mb-6">
@@ -30,7 +65,7 @@
             </div>
             <h1 class="text-2xl font-bold text-gray-800 mb-2">Jurnal Bulanan</h1>
             <p class="text-gray-500 mb-8">Simpan kenangan bulanan Anda langsung ke Google Drive & Sheets.</p>
-            
+
             <button id="authorize_button" class="hidden w-full bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5 bg-white rounded-full p-0.5">
                 Masuk dengan Google
@@ -43,10 +78,7 @@
         </div>
     </div>
 
-    <!-- MAIN APP (Hidden by default) -->
     <div id="app-screen" class="hidden min-h-screen flex flex-col">
-        
-        <!-- Navbar -->
         <nav class="bg-white shadow-sm sticky top-0 z-10">
             <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-16 items-center">
@@ -54,8 +86,25 @@
                         <span class="material-icons text-blue-600">book</span>
                         <span class="font-bold text-xl text-gray-800">MyJournal</span>
                     </div>
-                    <div class="flex items-center gap-4">
-                        <span id="user-name" class="text-sm font-medium text-gray-600 hidden sm:block">User</span>
+                    <div class="flex items-center gap-2 sm:gap-4 relative">
+                        <span id="user-name" class="text-xs sm:text-sm font-medium text-gray-600 max-w-[120px] sm:max-w-[220px] truncate">User</span>
+                        <button id="quick-menu-toggle" class="inline-flex items-center justify-center h-9 w-9 rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" title="Menu">
+                            <span class="material-icons text-xl">menu</span>
+                        </button>
+                        <div id="quick-menu-panel" class="hidden absolute right-0 top-12 w-56 bg-white border border-gray-200 rounded-lg shadow-lg p-2 z-20">
+                            <button id="open-settings-button" class="w-full inline-flex items-center px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50">
+                                <span class="material-icons text-gray-700 mr-2 text-lg">settings</span>
+                                Setting Input
+                            </button>
+                            <button id="help-button" class="w-full inline-flex items-center px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50">
+                                <span class="material-icons text-gray-700 mr-2 text-lg">help_outline</span>
+                                Bantuan
+                            </button>
+                            <button id="theme-toggle-button" class="w-full inline-flex items-center px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50">
+                                <span class="material-icons text-gray-700 mr-2 text-lg">dark_mode</span>
+                                Dark Mode
+                            </button>
+                        </div>
                         <img id="user-avatar" class="h-8 w-8 rounded-full bg-gray-200" src="" alt="">
                         <button id="signout_button" class="text-sm text-red-500 hover:text-red-700 font-medium">Keluar</button>
                     </div>
@@ -63,71 +112,77 @@
             </div>
         </nav>
 
-        <!-- Content -->
         <main class="flex-grow max-w-5xl mx-auto w-full px-4 py-8 sm:px-6 lg:px-8">
-            
-            <!-- Action Bar -->
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                 <div>
                     <h2 class="text-2xl font-bold text-gray-900">Jurnal Bulan Ini</h2>
                     <p class="text-sm text-gray-500 mt-1" id="current-date">...</p>
+                    <p class="text-sm text-blue-600 mt-1" id="current-month-label">Bulan aktif: -</p>
                 </div>
-                <div class="flex gap-2">
-                     <a id="sheet-link" href="#" target="_blank" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 w-full sm:w-auto">
+                    <select id="month-selector" class="col-span-2 w-full sm:w-auto inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"></select>
+                    <button id="export-month-button" class="col-span-1 w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <span class="material-icons text-gray-700 mr-2 text-lg">download</span>
+                        Export Bulan
+                    </button>
+                    <a id="sheet-link" href="#" target="_blank" class="col-span-1 w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                         <span class="material-icons text-green-600 mr-2 text-lg">table_view</span>
                         Buka Rekap (Sheets)
                     </a>
-                    <button onclick="openModal()" class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <button onclick="openModal()" class="col-span-2 w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                         <span class="material-icons mr-2 text-lg">add</span>
                         Tambah Catatan
                     </button>
                 </div>
             </div>
 
-            <!-- Loading State for Data -->
             <div id="data-loader" class="text-center py-12 hidden">
                 <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-10 w-10 mx-auto mb-4"></div>
                 <p class="text-gray-500">Mengambil data dari Spreadsheet...</p>
             </div>
 
-            <!-- Journal Grid -->
-            <div id="journal-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Items will be injected here via JS -->
+            <div id="journal-grid" class="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"></div>
+
+            <div id="pagination-wrap" class="hidden mt-6 flex flex-wrap items-center justify-center gap-3">
+                <label for="page-size-selector" class="text-sm text-gray-600">Tampil</label>
+                <select id="page-size-selector" class="px-2 py-1.5 rounded-md border border-gray-300 text-sm text-gray-700 bg-white">
+                    <option value="4">4</option>
+                    <option value="6">6</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="12">12</option>
+                </select>
+                <button id="prev-page-button" class="px-3 py-2 rounded-md border border-gray-300 text-sm text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">Sebelumnya</button>
+                <span id="page-info" class="text-sm text-gray-600">Halaman 1/1</span>
+                <button id="next-page-button" class="px-3 py-2 rounded-md border border-gray-300 text-sm text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">Berikutnya</button>
             </div>
 
-            <!-- Empty State -->
             <div id="empty-state" class="hidden text-center py-20 bg-white rounded-xl border border-dashed border-gray-300">
                 <span class="material-icons text-gray-300 text-6xl mb-4">filter_hdr</span>
                 <h3 class="text-lg font-medium text-gray-900">Belum ada catatan bulan ini</h3>
                 <p class="text-gray-500 mt-1">Mulai dengan menambahkan gambar dan cerita hari ini.</p>
             </div>
-
         </main>
 
         <footer class="bg-white border-t mt-auto">
             <div class="max-w-5xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                <p class="text-center text-sm text-gray-400">&copy; 2025 My Monthly Journal. Powered by Google Drive & Sheets.</p>
+                <p class="text-center text-sm text-gray-400">&copy; 2026 My Monthly Journal. Powered by Google Drive & Sheets.</p>
             </div>
         </footer>
     </div>
 
-    <!-- ADD MODAL -->
     <div id="add-modal" class="fixed z-50 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <!-- Overlay -->
             <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="closeModal()"></div>
-
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl lg:max-w-5xl w-full">
                 <form id="journal-form" onsubmit="handleFormSubmit(event)">
                     <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                         <div class="sm:flex sm:items-start">
                             <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                                 <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Catatan Baru</h3>
                                 <div class="mt-4 space-y-4">
-                                    
-                                    <!-- Image Upload -->
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-1">Foto</label>
                                         <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md relative hover:bg-gray-50 transition cursor-pointer">
@@ -140,128 +195,143 @@
                                         </div>
                                     </div>
 
-                                    <!-- Date -->
-                                    <div>
-                                        <label for="date" class="block text-sm font-medium text-gray-700">Tanggal</label>
-                                        <input type="date" name="date" id="input-date" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md border p-2" required>
-                                    </div>
-
-                                    <!-- Jenis Kegiatan -->
-                                    <div>
-                                        <label for="jenis_kegiatan" class="block text-sm font-medium text-gray-700">Jenis Kegiatan</label>
-                                        <input type="text" id="input-jenis" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md border p-2" placeholder="Contoh: Layanan Klasikal">
-                                    </div>
-
-                                    <!-- Sasaran -->
-                                    <div>
-                                        <label for="sasaran" class="block text-sm font-medium text-gray-700">Sasaran</label>
-                                        <select id="input-sasaran" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                                            <option value="">Pilih Kelas...</option>
-                                            <option>Kelas 7.1</option>
-                                            <option>Kelas 7.2</option>
-                                            <option>Kelas 7.3</option>
-                                            <option>Kelas 7.4</option>
-                                            <option>Kelas 7.5</option>
-                                            <option>Kelas 7.6</option>
-                                            <option>Kelas 7.7</option>
-                                            <option>Kelas 7.8</option>
-                                            <option>Kelas 7.9</option>
-                                            <option>Kelas 7.10</option>
-                                            <option>Kelas 7.11</option>
-                                            <option>Kelas 8.1</option>
-                                            <option>Kelas 8.2</option>
-                                            <option>Kelas 8.3</option>
-                                            <option>Kelas 8.4</option>
-                                            <option>Kelas 8.5</option>
-                                            <option>Kelas 8.6</option>
-                                            <option>Kelas 8.7</option>
-                                            <option>Kelas 8.8</option>
-                                            <option>Kelas 8.9</option>
-                                            <option>Kelas 8.10</option>
-                                            <option>Kelas 8.11</option>
-                                            <option>Kelas 9.1</option>
-                                            <option>Kelas 9.2</option>
-                                            <option>Kelas 9.3</option>
-                                            <option>Kelas 9.4</option>
-                                            <option>Kelas 9.5</option>
-                                            <option>Kelas 9.6</option>
-                                            <option>Kelas 9.7</option>
-                                            <option>Kelas 9.8</option>
-                                            <option>Kelas 9.9</option>
-                                            <option>Kelas 9.10</option>
-                                            <option>Kelas 9.11</option>
-                                        </select>
-                                    </div>
-
-                                    <!-- Nama Siswa -->
-                                    <div>
-                                        <label for="nama_siswa" class="block text-sm font-medium text-gray-700">Nama Siswa</label>
-                                        <input type="text" id="input-nama" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md border p-2" placeholder="Nama siswa yang bersangkutan">
-                                    </div>
-
-                                    <!-- Bidang Layanan & Fungsi Layanan (Grid) -->
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div>
-                                            <label for="bidang" class="block text-sm font-medium text-gray-700">Bidang Layanan</label>
-                                            <input type="text" id="input-bidang" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md border p-2">
-                                        </div>
-                                        <div>
-                                            <label for="fungsi" class="block text-sm font-medium text-gray-700">Fungsi Layanan</label>
-                                            <input type="text" id="input-fungsi" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md border p-2">
-                                        </div>
-                                    </div>
-
-                                    <!-- Topik & Waktu (Grid) -->
-                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                        <div class="sm:col-span-2">
-                                            <label for="topik" class="block text-sm font-medium text-gray-700">Topik / Pokok Bahasan</label>
-                                            <input type="text" id="input-topik" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md border p-2">
-                                        </div>
-                                        <div>
-                                            <label for="waktu" class="block text-sm font-medium text-gray-700">Waktu</label>
-                                            <input type="time" id="input-waktu" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md border p-2">
-                                        </div>
-                                    </div>
-
-                                    <!-- Notes (Catatan) -->
-                                    <div>
-                                        <label for="notes" class="block text-sm font-medium text-gray-700">Catatan Tambahan / Hasil</label>
-                                        <textarea id="input-notes" name="notes" rows="2" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md border p-2"></textarea>
-                                    </div>
-
-                                    <!-- Evaluasi -->
-                                    <div>
-                                        <label for="evaluasi" class="block text-sm font-medium text-gray-700">Evaluasi</label>
-                                        <textarea id="input-evaluasi" rows="2" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md border p-2"></textarea>
-                                    </div>
-
-                                    <!-- Tindak Lanjut -->
-                                    <div>
-                                        <label for="tindak_lanjut" class="block text-sm font-medium text-gray-700">Tindak Lanjut</label>
-                                        <textarea id="input-tindak-lanjut" rows="2" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md border p-2"></textarea>
-                                    </div>
-
+                                    <div id="dynamic-fields" class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3"></div>
+                                    <input type="hidden" id="input-date" />
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                        <button type="submit" id="btn-save" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
-                            Simpan
-                        </button>
-                        <button type="button" onclick="closeModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
-                            Batal
-                        </button>
+                        <button type="submit" id="btn-save" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">Simpan</button>
+                        <button type="button" onclick="closeModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Batal</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- SCRIPTS -->
-    <script src="config.js"></script>
-    <script src="app.js"></script>
-    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
-    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+    <div id="settings-modal" class="fixed z-50 inset-0 overflow-y-auto hidden" aria-labelledby="settings-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <h3 id="settings-title" class="text-lg font-semibold text-gray-900">Setting Struktur Input</h3>
+                    <p class="text-sm text-gray-500 mt-1">Atur field input yang muncul di form. Perubahan berlaku untuk akun Google yang sedang login (sinkron antar device untuk akun yang sama).</p>
+                    <div id="settings-fields" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                    <div class="mt-3 grid grid-cols-1 sm:flex sm:flex-wrap gap-2">
+                        <button id="add-setting-field-button" type="button" class="w-full sm:w-auto inline-flex items-center justify-center px-3 py-2 rounded-md border text-sm text-gray-700 hover:bg-gray-50">
+                            <span class="material-icons text-base mr-1">add</span>Tambah Field
+                        </button>
+                        <button id="reset-setting-field-button" type="button" class="w-full sm:w-auto inline-flex items-center justify-center px-3 py-2 rounded-md border text-sm text-red-600 hover:bg-red-50">
+                            <span class="material-icons text-base mr-1">restart_alt</span>Reset Default
+                        </button>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button id="apply-settings-button" type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 sm:ml-3 sm:w-auto sm:text-sm">Simpan Pengaturan</button>
+                    <button id="close-settings-button" type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="help-modal" class="fixed z-50 inset-0 overflow-y-auto hidden" aria-labelledby="help-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <h3 id="help-title" class="text-lg font-semibold text-gray-900">Bantuan Penggunaan MyJournal</h3>
+                    <div class="mt-4 space-y-4 text-sm text-gray-700 max-h-[70vh] overflow-y-auto pr-1 leading-relaxed text-justify">
+                        <div>
+                            <p class="font-semibold text-gray-900">1. Login dan inisialisasi</p>
+                            <p>Klik <b>Masuk dengan Google</b>. Sistem akan meminta izin akses Google Drive dan Google Sheets. Setelah berhasil, aplikasi akan membuat (jika belum ada):</p>
+                            <p>- Folder gambar jurnal di Google Drive.</p>
+                            <p>- Spreadsheet rekap jurnal bulanan.</p>
+                            <p>Jika izin ditolak, aplikasi tidak dapat digunakan karena semua data bergantung pada Google API user.</p>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900">2. Menambah catatan</p>
+                            <p>Klik <b>Tambah Catatan</b>, isi field yang tersedia, upload foto (opsional/mandatory sesuai setting), lalu klik simpan.</p>
+                            <p>Data akan disimpan sebagai 2 bagian:</p>
+                            <p>- Teks/form input ke Google Sheets.</p>
+                            <p>- File gambar ke Google Drive.</p>
+                            <p>Bulan penyimpanan ditentukan dari field bertipe <code>date</code>. Contoh tanggal 2026-04-10 masuk ke sheet <code>2026-04</code>.</p>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900">3. History bulanan</p>
+                            <p>Gunakan dropdown bulan di toolbar untuk berpindah riwayat. Setiap bulan dipisah dalam tab sheet format <code>YYYY-MM</code> agar rekap lebih rapi dan cepat ditelusuri.</p>
+                            <p>Perpindahan bulan hanya memfilter tampilan dan sumber data aktif, bukan memindahkan data otomatis kecuali saat edit tanggal catatan.</p>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900">4. Edit dan hapus</p>
+                            <p>Gunakan ikon edit/hapus pada kartu jurnal.</p>
+                            <p>- Edit: memperbarui data baris aktif. Jika tanggal berubah ke bulan lain, data otomatis dipindah ke sheet target bulan.</p>
+                            <p>- Hapus: menghapus baris di Sheets dan mencoba menghapus gambar terkait di Drive.</p>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900">5. Export data bulanan</p>
+                            <p>Klik <b>Export Bulan</b> untuk mengunduh data dari bulan yang sedang aktif dalam format CSV.</p>
+                            <p>Langkah ekspor:</p>
+                            <p>1. Pilih bulan pada dropdown Riwayat.</p>
+                            <p>2. Klik tombol <b>Export Bulan</b>.</p>
+                            <p>3. File otomatis terunduh dengan nama <code>journal-YYYY-MM.csv</code>.</p>
+                            <p>4. Buka file CSV dengan Excel atau upload kembali ke Google Sheets jika diperlukan.</p>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900">6. Setting Input</p>
+                            <p>Gunakan <b>Setting Input</b> untuk mengatur struktur form tambah catatan sesuai kebutuhan kerja Anda.</p>
+                            <p>Fungsi setiap kontrol di Setting Input:</p>
+                            <p>- <b>Label</b>: nama field yang tampil di form dan kartu jurnal.</p>
+                            <p>- <b>Type</b>: jenis input field.</p>
+                            <p>- <b>Wajib</b>: jika dicentang, field harus diisi sebelum simpan.</p>
+                            <p>- <b>Hapus</b>: menghapus field dari form aktif.</p>
+                            <p>- <b>Tambah Field</b>: menambah field baru.</p>
+                            <p>- <b>Reset Default</b>: mengembalikan struktur ke format awal sistem.</p>
+                            <p>Jenis type yang tersedia:</p>
+                            <p>- <code>text</code>: input teks singkat (contoh: Nama Siswa, Bidang Layanan).</p>
+                            <p>- <code>textarea</code>: input teks panjang (contoh: Catatan, Evaluasi).</p>
+                            <p>- <code>date</code>: tanggal. Minimal harus ada 1 field date agar pembagian bulanan berjalan.</p>
+                            <p>- <code>time</code>: jam kegiatan.</p>
+                            <p>- <code>select</code>: dropdown pilihan. Jika memilih type ini, isi <b>Opsi dropdown</b> dipisahkan koma.</p>
+                            <p>Contoh opsi select: <code>Kelas 7.1, Kelas 7.2, Kelas 7.3</code>.</p>
+                            <p>Setting input disimpan per akun Google di sheet konfigurasi, sehingga user lain tidak ikut terpengaruh walau memakai spreadsheet yang sama.</p>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900">7. Reset ke default</p>
+                            <p>Di menu setting, klik <b>Reset Default</b> lalu simpan pengaturan untuk kembali ke struktur awal.</p>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900">8. Dark Mode</p>
+                            <p>Klik tombol <b>Dark Mode</b> di toolbar untuk ganti tema terang/gelap. Preferensi disimpan otomatis di browser.</p>
+                        </div>
+                        <div class="pt-2 border-t border-gray-200">
+                            <p class="font-semibold text-gray-900">Syarat & Ketentuan</p>
+                            <p>1. Data dan file disimpan pada akun Google pengguna yang login. Aplikasi tidak menyediakan penyimpanan server terpisah.</p>
+                            <p>2. Kuota penyimpanan (Google Drive) sepenuhnya mengikuti kapasitas akun pengguna. Jika kuota penuh, upload gambar/data dapat gagal.</p>
+                            <p>3. Jika Google Drive/Google Sheets API sedang bermasalah, dibatasi, atau token login kedaluwarsa, proses simpan/edit/export dapat terganggu.</p>
+                            <p>4. Pengguna bertanggung jawab atas isi data yang disimpan, termasuk keamanan akun Google dan pengelolaan akses file.</p>
+                            <p>5. Struktur input kustom disimpan per akun di spreadsheet konfigurasi; perubahan tidak akan diterapkan ke akun Google lain.</p>
+                            <p>6. Untuk menghindari kehilangan data, pengguna disarankan melakukan backup berkala dari spreadsheet dan folder gambar.</p>
+                            <p>7. Lokasi penyimpanan file:</p>
+                            <p>- Gambar tersimpan di folder Drive: <code>My Monthly Journal - Images</code>.</p>
+                            <p>- Data tabel tersimpan di spreadsheet: <code>My Monthly Journal - Data</code> dengan tab bulanan <code>YYYY-MM</code>.</p>
+                            <p>- Konfigurasi setting input akun tersimpan di tab: <code>_CONFIG</code>.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button id="close-help-button" type="button" class="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:w-auto sm:text-sm">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+    <script defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+    <script defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
 </body>
 </html>
